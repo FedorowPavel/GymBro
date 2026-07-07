@@ -19,6 +19,7 @@ _SPLIT_BY_MUSCLE: dict[frozenset[str], str] = {
     frozenset({"biceps"}): "Biceps",
     frozenset({"back"}): "Back",
     frozenset({"triceps"}): "Triceps",
+    frozenset({"legs"}): "Legs",
 }
 
 
@@ -146,6 +147,8 @@ def _infer_split_focus(muscle_group: str) -> str:
         return "Chest + Biceps"
     if muscle_group == "back":
         return "Back + Triceps"
+    if muscle_group == "legs":
+        return "Legs"
     return "Logged"
 
 

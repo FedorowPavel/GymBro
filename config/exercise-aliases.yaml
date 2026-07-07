@@ -389,3 +389,38 @@ cable_lateral_raise:
     - махи на блоке
     - разведения на блоке
     - cable lateral raise
+
+lunge:
+  canonical: Выпады
+  muscle_group: legs
+  aliases:
+    - выпады
+    - выпад
+    - выпады с гантелями
+    - выпады с гантелями вперёд
+    - walking lunge
+    - lunge
+
+leg_extension:
+  canonical: Разгибания ног в тренажёре
+  muscle_group: legs
+  aliases:
+    - разгибания ног
+    - разгибание ног
+    - разгибания в тренажере
+    - разгибания в тренажёре
+    - квадрицепс в тренажере
+    - leg extension
+
+leg_curl:
+  canonical: Сгибания ног в тренажёре
+  muscle_group: legs
+  aliases:
+    - сгибания ног
+    - сгибание ног
+    - сгибания в тренажере
+    - сгибания в тренажёре
+    - бицепс бедра
+    - задняя поверхность бедра
+    - сгибания на заднюю поверхность
+    - leg curl

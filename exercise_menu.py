@@ -15,6 +15,7 @@ MUSCLE_GROUPS: dict[str, str] = {
     "biceps": "Бицепс",
     "triceps": "Трицепс",
     "shoulders": "Плечи",
+    "legs": "Ноги",
 }
 
 _slug_muscle_cache: dict[str, str] = {}
