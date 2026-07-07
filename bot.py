@@ -157,11 +157,18 @@ def build_application(settings: Settings, agent_service: GymBroAgentService) -> 
         typing_task = asyncio.create_task(_keep_typing(context.bot, message.chat_id, stop))
         slow_task = asyncio.create_task(_slow_notice(status_msg, stop))
 
+        async def on_retry() -> None:
+            try:
+                await status_msg.edit_text("🔄 Пустой ответ, повторяю запрос к агенту…")
+            except Exception:  # noqa: BLE001
+                logger.debug("retry status edit failed", exc_info=True)
+
         try:
             reply = await agent_service.ask(
                 user.id,
                 message.text.strip(),
                 on_progress=on_progress,
+                on_retry=on_retry,
             )
         except Exception:  # noqa: BLE001
             logger.exception("Agent ask failed")

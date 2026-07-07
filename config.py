@@ -26,6 +26,7 @@ class Settings:
     agent_workspace: Path
     sessions_path: Path
     ask_timeout_seconds: float
+    agent_empty_retries: int
     supabase_url: str
     supabase_service_role_key: str
 
@@ -77,6 +78,7 @@ def load_settings() -> Settings:
         ).expanduser(),
         sessions_path=project_root / "data" / "sessions.json",
         ask_timeout_seconds=float(os.environ.get("AGENT_ASK_TIMEOUT_SECONDS", "300")),
+        agent_empty_retries=max(1, int(os.environ.get("AGENT_EMPTY_RETRIES", "2"))),
         supabase_url=os.environ.get("SUPABASE_URL", "").strip(),
         supabase_service_role_key=os.environ.get(
             "SUPABASE_SERVICE_ROLE_KEY", ""

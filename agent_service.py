@@ -25,6 +25,7 @@ logger = logging.getLogger(__name__)
 
 TELEGRAM_MAX_MESSAGE = 4096
 ProgressCallback = Callable[[str], Awaitable[None] | None]
+RetryCallback = Callable[[], Awaitable[None] | None]
 
 
 class GymBroAgentService:
@@ -62,21 +63,57 @@ class GymBroAgentService:
         message: str,
         *,
         on_progress: ProgressCallback | None = None,
+        on_retry: RetryCallback | None = None,
     ) -> str:
         logger.info("Agent ask started for user %s", user_id)
-        try:
-            return await self._ask_once(user_id, message, on_progress=on_progress)
-        except InternalServerError:
-            logger.warning("Cursor internal error for user %s, retrying with fresh agent", user_id)
-            await self.reset(user_id)
+        attempts = self._settings.agent_empty_retries
+
+        for attempt in range(1, attempts + 1):
             try:
-                return await self._ask_once(user_id, message, on_progress=on_progress)
-            except CursorAgentError as retry_err:
-                logger.exception("Cursor agent failed after retry for user %s", user_id)
-                return _format_agent_error(retry_err)
-        except CursorAgentError as err:
-            logger.exception("Cursor agent failed for user %s", user_id)
-            return _format_agent_error(err)
+                text = await self._ask_once(
+                    user_id,
+                    message,
+                    on_progress=on_progress,
+                    retry=attempt > 1,
+                )
+                if text.strip():
+                    return text
+                logger.warning(
+                    "Empty agent reply for user %s (attempt %s/%s)",
+                    user_id,
+                    attempt,
+                    attempts,
+                )
+            except InternalServerError:
+                logger.warning(
+                    "Cursor internal error for user %s (attempt %s/%s), resetting agent",
+                    user_id,
+                    attempt,
+                    attempts,
+                )
+                await self.reset(user_id)
+                if attempt == attempts:
+                    return "Временный сбой на стороне Cursor. Попробуйте ещё раз или /reset."
+                if on_retry is not None:
+                    result = on_retry()
+                    if asyncio.iscoroutine(result):
+                        await result
+                continue
+            except CursorAgentError as err:
+                logger.exception("Cursor agent failed for user %s", user_id)
+                return _format_agent_error(err)
+
+            if attempt < attempts:
+                if on_retry is not None:
+                    result = on_retry()
+                    if asyncio.iscoroutine(result):
+                        await result
+                await asyncio.sleep(1.5)
+
+        return (
+            "Агент не смог сформировать ответ (пустой ответ после повторов). "
+            "Напишите ещё раз или /reset."
+        )
 
     async def stop_run(self, user_id: int) -> bool:
         key = str(user_id)
@@ -103,9 +140,18 @@ class GymBroAgentService:
         message: str,
         *,
         on_progress: ProgressCallback | None = None,
+        retry: bool = False,
     ) -> str:
         agent = await self._get_agent(user_id)
-        payload = build_user_message(self._settings, user_id, message)
+        if retry:
+            payload = (
+                "Твой прошлый ответ был пустым. Ответь по-русски, кратко и по делу, "
+                "используя данные Supabase из контекста этого чата. "
+                "Не возвращай пустой ответ.\n\n"
+                f"Вопрос пользователя: {message}"
+            )
+        else:
+            payload = build_user_message(self._settings, user_id, message)
         run = await agent.send(payload)
         key = str(user_id)
         self._active_runs[key] = run
@@ -117,8 +163,8 @@ class GymBroAgentService:
             )
         finally:
             self._active_runs.pop(key, None)
-        logger.info("Agent ask finished for user %s", user_id)
-        return _chunk_for_telegram(text or "Готово, но ответ пустой.")
+        logger.info("Agent ask finished for user %s (retry=%s)", user_id, retry)
+        return _chunk_for_telegram(text)
 
     async def _collect_run_text(
         self,
