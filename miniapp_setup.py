@@ -1,6 +1,6 @@
 import logging
 
-from telegram import MenuButtonWebApp, WebAppInfo
+from telegram import MenuButtonDefault
 
 from config import Settings
 
@@ -8,21 +8,10 @@ logger = logging.getLogger(__name__)
 
 
 async def setup_miniapp_menu(settings: Settings, bot) -> None:
-    """Set Telegram menu button → Mini App (if MINIAPP_URL is configured)."""
-    url = settings.miniapp_url.strip().rstrip("/")
-    if not url:
-        logger.info("MINIAPP_URL not set — menu button skipped")
-        return
-    if not url.startswith("https://"):
-        logger.warning("MINIAPP_URL must be https:// — got: %s", url)
-        return
+    """Reset Telegram menu button to default (no Web App icon left of input)."""
+    del settings  # kept for call site compatibility
     try:
-        await bot.set_chat_menu_button(
-            menu_button=MenuButtonWebApp(
-                text="📊 Прогресс",
-                web_app=WebAppInfo(url=url),
-            )
-        )
-        logger.info("Mini App menu button set: %s", url)
+        await bot.set_chat_menu_button(menu_button=MenuButtonDefault())
+        logger.info("Telegram menu button reset to default")
     except Exception:  # noqa: BLE001
-        logger.exception("Failed to set Mini App menu button")
+        logger.exception("Failed to reset Telegram menu button")

@@ -48,7 +48,7 @@ async def main() -> None:
 
     from miniapp_setup import setup_miniapp_menu
 
-    await setup_miniapp_menu(settings, app.bot)
+    await setup_miniapp_menu(settings, app.bot)  # clears left-of-input menu Web App button
 
     await app.updater.start_polling(drop_pending_updates=True)
 

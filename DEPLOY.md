@@ -104,9 +104,10 @@ Railway передаёт их как build args при `docker build`.
 
 Без домена inline Web App кнопка может не работать — тогда жми **🌐 Открыть в браузере**.
 
-### 6. BotFather Menu Button (опционально)
+### 6. BotFather Menu Button
 
-Можно также указать Web App URL в @BotFather → Bot Settings → Menu Button.
+**Не нужен** — график открывается через кнопку 📊 под «Добавить упражнение» или команду `/stats` / текст `stats`.
+При старте бот сбрасывает menu button в стандартный (без иконки Web App слева от поля ввода).
 
 ### 6. Локальная разработка miniapp
 

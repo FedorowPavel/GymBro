@@ -31,7 +31,7 @@ WELCOME = """Привет! Я Gym Bro — твой персональный тр
 Команды:
 /help — справка
 /log — добавить упражнение кнопками
-/stats — график прогресса
+/stats или stats — график прогресса (кнопка 📊 под «Добавить упражнение»)
 /reset — новый диалог с агентом
 /stop — остановить текущий запрос
 """
@@ -185,12 +185,7 @@ def build_application(settings: Settings, agent_service: GymBroAgentService) -> 
         keyboard = main_reply_keyboard(url or None, telegram_user_id=user_id)
         await update.message.reply_text(WELCOME, reply_markup=keyboard)
 
-        if url:
-            await update.message.reply_text(
-                "График жима — нажми кнопку:",
-                reply_markup=progress_inline_keyboard(url, user_id),
-            )
-        else:
+        if not url:
             await update.message.reply_text(
                 "⚠️ MINIAPP_URL не задан в Railway (сервис **бота**, не miniapp).\n"
                 "Добавь URL miniapp-сервиса и redeploy бота — появится кнопка 📊 Прогресс."
@@ -255,6 +250,9 @@ def build_application(settings: Settings, agent_service: GymBroAgentService) -> 
         if await handle_log_button(message, context):
             return
         if message.text == PROGRESS_BTN:
+            return
+        if message.text.strip().lower() == "stats":
+            await stats_cmd(update, context)
             return
         if await handle_wizard_text(settings, message, context, user.id):
             return
