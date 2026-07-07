@@ -12,7 +12,6 @@ from telegram.ext import ContextTypes
 from config import Settings
 from exercise_menu import (
     ADD_EXERCISE_BTN,
-    SLUG_MUSCLE,
     exercise_keyboard,
     exercise_name,
     main_reply_keyboard,
@@ -20,6 +19,7 @@ from exercise_menu import (
     muscle_label,
     numbers_keyboard,
     numbers_keyboard_without_history,
+    slug_muscle_group,
 )
 from workout_flow import save_structured_workout
 from workout_parser import parse_weight_reps_sets
@@ -141,7 +141,7 @@ async def handle_log_callback(
 
     if data.startswith("log:e:"):
         slug = data.removeprefix("log:e:")
-        muscle_id = SLUG_MUSCLE.get(slug)
+        muscle_id = slug_muscle_group(settings, slug)
         _set_state(
             context,
             LogWizardState(step="numbers", muscle_id=muscle_id, slug=slug),
@@ -151,7 +151,7 @@ async def handle_log_callback(
 
     if data.startswith("log:back:e:"):
         slug = data.removeprefix("log:back:e:")
-        muscle_id = SLUG_MUSCLE.get(slug)
+        muscle_id = slug_muscle_group(settings, slug)
         if muscle_id and query.message:
             _set_state(context, LogWizardState(step="exercise", muscle_id=muscle_id))
             await query.message.edit_text(
@@ -196,7 +196,7 @@ async def _prompt_numbers(settings: Settings, query: CallbackQuery, slug: str) -
         text += f"\n\nИли нажми кнопку с прошлыми значениями:"
         keyboard = numbers_keyboard(slug, weight=weight, reps=reps, sets=sets)
     else:
-        keyboard = numbers_keyboard_without_history(slug)
+        keyboard = numbers_keyboard_without_history(slug, settings)
     await query.message.edit_text(text, reply_markup=keyboard)
 
 

@@ -17,19 +17,21 @@ MUSCLE_GROUPS: dict[str, str] = {
     "shoulders": "Плечи",
 }
 
-SLUG_MUSCLE: dict[str, str] = {
-    "bench_press": "chest",
-    "incline_db_press": "chest",
-    "db_curl": "biceps",
-    "hammer_curl": "biceps",
-    "lat_pulldown": "back",
-    "cable_row": "back",
-    "ez_french_press": "triceps",
-    "rope_pushdown": "triceps",
-    "seated_db_press": "shoulders",
-    "lateral_raise": "shoulders",
-    "rear_delt_fly": "shoulders",
-}
+_slug_muscle_cache: dict[str, str] = {}
+
+
+def _load_slug_muscle(settings: Settings) -> dict[str, str]:
+    if _slug_muscle_cache:
+        return _slug_muscle_cache
+    catalog = load_catalog(settings)
+    for slug, meta in catalog.items():
+        if isinstance(meta, dict) and meta.get("muscle_group"):
+            _slug_muscle_cache[slug] = str(meta["muscle_group"])
+    return _slug_muscle_cache
+
+
+def slug_muscle_group(settings: Settings, slug: str) -> str | None:
+    return _load_slug_muscle(settings).get(slug)
 
 
 def main_reply_keyboard() -> ReplyKeyboardMarkup:
@@ -56,8 +58,9 @@ def muscle_group_keyboard() -> InlineKeyboardMarkup:
 
 def exercise_keyboard(settings: Settings, muscle_id: str) -> InlineKeyboardMarkup:
     catalog = load_catalog(settings)
+    slug_muscle = _load_slug_muscle(settings)
     buttons: list[InlineKeyboardButton] = []
-    for slug, muscle in SLUG_MUSCLE.items():
+    for slug, muscle in slug_muscle.items():
         if muscle != muscle_id:
             continue
         meta = catalog.get(slug) or {}
@@ -65,12 +68,8 @@ def exercise_keyboard(settings: Settings, muscle_id: str) -> InlineKeyboardMarku
         buttons.append(InlineKeyboardButton(name, callback_data=f"log:e:{slug}"))
 
     rows: list[list[InlineKeyboardButton]] = []
-    row: list[InlineKeyboardButton] = []
     for button in buttons:
-        row.append(button)
-        if len(row) == 1:
-            rows.append(row)
-            row = []
+        rows.append([button])
     rows.append(
         [
             InlineKeyboardButton("← Группы", callback_data="log:back:m"),
@@ -102,8 +101,7 @@ def numbers_keyboard(
     )
 
 
-def numbers_keyboard_without_history(slug: str) -> InlineKeyboardMarkup:
-    muscle_id = SLUG_MUSCLE.get(slug, "")
+def numbers_keyboard_without_history(slug: str, settings: Settings) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         [
             [InlineKeyboardButton("← Упражнения", callback_data=f"log:back:e:{slug}")],

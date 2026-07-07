@@ -3,6 +3,7 @@
 
 bench_press:
   canonical: Жим лёжа
+  muscle_group: chest
   aliases:
     - жим штанги лёжа
     - жим штанги лежа
@@ -16,41 +17,89 @@ bench_press:
     - bench press
     - bench
 
+incline_barbell_press:
+  canonical: Жим штанги на наклонной
+  muscle_group: chest
+  aliases:
+    - жим штанги на наклонной
+    - жим штанги на наклоне
+    - жим грифа на наклонной
+    - жим грифа на наклоне
+    - жим на наклонной скамье штанга
+    - наклонный жим штанги
+    - incline barbell press
+
 incline_db_press:
   canonical: Жим гантелей на наклонной
+  muscle_group: chest
   aliases:
     - жим гантелей на наклонной
     - жим гантелей наклон
-    - жим на наклонной
-    - жим на наклоне
     - наклонный жим гантелей
-    - наклонный жим
     - incline dumbbell press
-    - incline press
 
-db_curl:
-  canonical: Подъём гантелей на бицепс сидя
+dumbbell_bench_press:
+  canonical: Жим гантелей лёжа
+  muscle_group: chest
   aliases:
-    - подъём гантелей на бицепс сидя
-    - подъем гантелей на бицепс сидя
-    - сгибания на бицепс сидя
-    - подъём на бицепс сидя
-    - подъем на бицепс сидя
-    - бицепс сидя
-    - сгибания с гантелями сидя
-    - dumbbell curl
+    - жим гантелей лёжа
+    - жим гантелей лежа
+    - жим гантелей на горизонтальной
+    - dumbbell bench press
 
-hammer_curl:
-  canonical: Молотки
+dumbbell_fly:
+  canonical: Разведение гантелей лёжа
+  muscle_group: chest
   aliases:
-    - молотки
-    - молот
-    - молотковые сгибания
-    - hammer curl
-    - hammer curls
+    - разведение гантелей лёжа
+    - разведение гантелей лежа
+    - разводка гантелей лёжа
+    - разводка лёжа
+    - разведения лёжа
+    - dumbbell fly
+    - chest fly
+
+cable_crossover:
+  canonical: Сведение в кроссовере
+  muscle_group: chest
+  aliases:
+    - сведение в кроссовере
+    - кроссовер
+    - бабочка на блоках
+    - сведение рук в кроссовере
+    - cable crossover
+
+pec_deck:
+  canonical: Сведение в тренажёре (пек-дек)
+  muscle_group: chest
+  aliases:
+    - пек дек
+    - пек-дек
+    - сведение в тренажёре
+    - бабочка в тренажёре
+    - pec deck
+
+chest_dip:
+  canonical: Отжимания на брусьях (грудь)
+  muscle_group: chest
+  aliases:
+    - отжимания на брусьях
+    - брусья на грудь
+    - брусья
+    - chest dip
+
+push_up:
+  canonical: Отжимания от пола
+  muscle_group: chest
+  aliases:
+    - отжимания
+    - отжимания от пола
+    - push up
+    - push-up
 
 lat_pulldown:
   canonical: Тяга вертикального блока
+  muscle_group: back
   aliases:
     - тяга вертикального блока
     - вертикальная тяга блока
@@ -64,6 +113,7 @@ lat_pulldown:
 
 cable_row:
   canonical: Тяга горизонтального блока
+  muscle_group: back
   aliases:
     - тяга горизонтального блока
     - горизонтальная тяга блока
@@ -74,8 +124,145 @@ cable_row:
     - cable row
     - seated row
 
+pull_up:
+  canonical: Подтягивания
+  muscle_group: back
+  aliases:
+    - подтягивания
+    - подтягивание
+    - pull up
+    - pull-up
+
+chin_up:
+  canonical: Подтягивания обратным хватом
+  muscle_group: back
+  aliases:
+    - подтягивания обратным хватом
+    - подтягивания супинированным хватом
+    - chin up
+
+barbell_row:
+  canonical: Тяга штанги в наклоне
+  muscle_group: back
+  aliases:
+    - тяга штанги в наклоне
+    - тяга штанги к поясу
+    - наклонная тяга штанги
+    - barbell row
+    - bent over row
+
+dumbbell_row:
+  canonical: Тяга гантели в наклоне
+  muscle_group: back
+  aliases:
+    - тяга гантели в наклоне
+    - тяга гантели одной рукой
+    - тяга одной гантели
+    - dumbbell row
+
+t_bar_row:
+  canonical: Т-тяга
+  muscle_group: back
+  aliases:
+    - т тяга
+    - т-тяга
+    - тяга т грифа
+    - t bar row
+
+face_pull:
+  canonical: Тяга к лицу
+  muscle_group: back
+  aliases:
+    - тяга к лицу
+    - face pull
+
+straight_arm_pulldown:
+  canonical: Пуловер на блоке
+  muscle_group: back
+  aliases:
+    - пуловер на блоке
+    - прямые руки на блоке
+    - разгибания рук на блоке
+    - straight arm pulldown
+
+shrug:
+  canonical: Шраги
+  muscle_group: back
+  aliases:
+    - шраги
+    - шраг
+    - shrug
+
+db_curl:
+  canonical: Подъём гантелей на бицепс сидя
+  muscle_group: biceps
+  aliases:
+    - подъём гантелей на бицепс сидя
+    - подъем гантелей на бицепс сидя
+    - сгибания на бицепс сидя
+    - подъём на бицепс сидя
+    - подъем на бицепс сидя
+    - бицепс сидя
+    - сгибания с гантелями сидя
+    - dumbbell curl
+
+hammer_curl:
+  canonical: Молотки
+  muscle_group: biceps
+  aliases:
+    - молотки
+    - молот
+    - молотковые сгибания
+    - hammer curl
+    - hammer curls
+
+barbell_curl:
+  canonical: Подъём штанги на бицепс
+  muscle_group: biceps
+  aliases:
+    - подъём штанги на бицепс
+    - подъем штанги на бицепс
+    - сгибания со штангой
+    - сгибания на бицепс со штангой
+    - barbell curl
+
+preacher_curl:
+  canonical: Сгибания на скамье Скотта
+  muscle_group: biceps
+  aliases:
+    - скамья скотта
+    - сгибания на скамье скотта
+    - сгибания на скотте
+    - preacher curl
+
+cable_curl:
+  canonical: Сгибания на блоке (бицепс)
+  muscle_group: biceps
+  aliases:
+    - сгибания на блоке
+    - сгибания на нижнем блоке
+    - бицепс на блоке
+    - cable curl
+
+incline_db_curl:
+  canonical: Сгибания гантелей на наклонной
+  muscle_group: biceps
+  aliases:
+    - сгибания на наклонной
+    - бицепс на наклонной
+    - incline curl
+
+concentration_curl:
+  canonical: Концентрированные сгибания
+  muscle_group: biceps
+  aliases:
+    - концентрированные сгибания
+    - концентрация на бицепс
+    - concentration curl
+
 ez_french_press:
   canonical: Французский жим (EZ)
+  muscle_group: triceps
   aliases:
     - французский жим ez
     - французский жим с ez
@@ -83,8 +270,6 @@ ez_french_press:
     - французский жим
     - французский
     - франц
-    - жим узким хватом лёжа
-    - жим узким хватом лежа
     - разгибания на трицепс лёжа
     - разгибания на трицепс лежа
     - french press
@@ -93,29 +278,75 @@ ez_french_press:
 
 rope_pushdown:
   canonical: Разгибания на блоке (верёвка)
+  muscle_group: triceps
   aliases:
     - разгибания на блоке верёвка
     - разгибания на блоке веревка
     - разгибания на верёвке
     - разгибания на веревке
     - разгибания на блоке
-    - тяга на трицепс
     - pushdown
     - triceps pushdown
     - rope pushdown
 
+close_grip_bench_press:
+  canonical: Жим узким хватом
+  muscle_group: triceps
+  aliases:
+    - жим узким хватом
+    - жим узким хватом лёжа
+    - жим узким хватом лежа
+    - close grip bench
+
+overhead_triceps_extension:
+  canonical: Разгибания из-за головы
+  muscle_group: triceps
+  aliases:
+    - разгибания из за головы
+    - разгибания за головой
+    - французский жим стоя
+    - overhead extension
+
+dumbbell_kickback:
+  canonical: Разгибания гантели в наклоне
+  muscle_group: triceps
+  aliases:
+    - кикбэк
+    - кикбек
+    - разгибания гантели назад
+    - kickback
+
+bench_dip:
+  canonical: Отжимания от скамьи (трицепс)
+  muscle_group: triceps
+  aliases:
+    - отжимания от скамьи
+    - обратные отжимания
+    - bench dip
+
 seated_db_press:
   canonical: Жим гантелей сидя
+  muscle_group: shoulders
   aliases:
     - жим гантелей сидя
     - жим сидя гантели
     - армейский жим гантелей
-    - жим сидя
     - shoulder press seated
     - seated dumbbell press
 
+barbell_overhead_press:
+  canonical: Жим штанги стоя
+  muscle_group: shoulders
+  aliases:
+    - жим штанги стоя
+    - армейский жим
+    - жим стоя
+    - overhead press
+    - ohp
+
 lateral_raise:
   canonical: Разведения стоя
+  muscle_group: shoulders
   aliases:
     - разведения гантелей стоя
     - разведения стоя
@@ -125,8 +356,24 @@ lateral_raise:
     - lateral raise
     - side raise
 
+arnold_press:
+  canonical: Жим Арнольда
+  muscle_group: shoulders
+  aliases:
+    - жим арнольда
+    - arnold press
+
+front_raise:
+  canonical: Подъём гантелей перед собой
+  muscle_group: shoulders
+  aliases:
+    - подъём перед собой
+    - махи перед собой
+    - front raise
+
 rear_delt_fly:
   canonical: Разведения в наклоне
+  muscle_group: shoulders
   aliases:
     - разведения в наклоне
     - разведения на заднюю дельту
@@ -134,3 +381,11 @@ rear_delt_fly:
     - махи в наклоне
     - rear delt fly
     - reverse fly
+
+cable_lateral_raise:
+  canonical: Махи в стороны на блоке
+  muscle_group: shoulders
+  aliases:
+    - махи на блоке
+    - разведения на блоке
+    - cable lateral raise

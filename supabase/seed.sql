@@ -75,6 +75,8 @@ insert into public.exercises (slug, name, muscle_group, equipment) values
   ('rear_delt_fly', 'Разведения в наклоне', 'shoulders', 'dumbbell')
 on conflict (slug) do nothing;
 
+-- More exercises: also run supabase/add_common_exercises.sql
+
 -- Baseline lifts (July) as one workout snapshot
 with w as (
   insert into public.workouts (telegram_user_id, workout_date, split_focus, notes)
