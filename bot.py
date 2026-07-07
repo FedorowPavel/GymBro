@@ -14,15 +14,16 @@ from telegram.request import HTTPXRequest
 from agent_service import GymBroAgentService
 from config import Settings
 from telegram_format import markdown_to_telegram_html
+from workout_flow import prepare_agent_message
 
 logger = logging.getLogger(__name__)
 
 WELCOME = """Привет! Я Gym Bro — твой персональный тренер 💪
 
 Могу:
-• записать тренировку (например: жим 66×6×3)
+• составить программу на тренировку (например: «иду на грудь и бицепс, пропиши программу»)
+• записать подходы (например: «жим лёжа 66 на 6 три подхода» или «сегодня сделал жим 67×6×3»)
 • разобрать прогресс
-• предложить план на следующую сессию
 
 Команды:
 /help — справка
@@ -164,12 +165,16 @@ def build_application(settings: Settings, agent_service: GymBroAgentService) -> 
                 logger.debug("retry status edit failed", exc_info=True)
 
         try:
+            user_text = message.text.strip()
+            agent_text, saved_line = prepare_agent_message(settings, user.id, user_text)
             reply = await agent_service.ask(
                 user.id,
-                message.text.strip(),
+                agent_text,
                 on_progress=on_progress,
                 on_retry=on_retry,
             )
+            if saved_line:
+                reply = f"{saved_line}\n\n{reply}"
         except Exception:  # noqa: BLE001
             logger.exception("Agent ask failed")
             reply = "Произошла ошибка. Попробуйте позже или /reset."
