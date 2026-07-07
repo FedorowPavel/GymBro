@@ -1,0 +1,60 @@
+# Client profile — Pavel (seed until Supabase)
+
+general:
+  age: 33
+  birth_date: "1993-02-01"
+  height_cm: 173
+  weight_kg: 74
+  body_type: ectomorph
+  occupation: programmer
+  sleep_hours: 8
+  goal: strength + moderate hypertrophy (+2-3 kg lean mass)
+
+training_split:
+  - day: "Mon/Tue"
+    focus: "Chest + Biceps"
+  - day: "Wed/Thu"
+    focus: "Back + Triceps"
+  - day: "Fri/Sat"
+    focus: "Shoulders (+ legs sometimes)"
+
+restrictions:
+  banned_exercises:
+    - barbell squat
+    - deadlift
+    - barbell upright row
+    - straight bar french press
+    - hyperextension
+    - leg-supported rows
+  injuries:
+    - part: left ankle
+      status: recovering_since_2026-06-16
+      note: seated/supine only, no running yet
+    - part: lower back
+      status: chronic
+      note: no axial barbell load
+
+current_lifts_july:
+  bench_press: "66x6x3"
+  incline_db_press: "24x7x3"
+  vertical_lat_pulldown: "58x8x3"
+  horizontal_row: "55x8x3"
+  seated_db_press: "20x6x3"
+  ez_french_press: "33.5x8x3"
+
+short_term_goals:
+  - "Bench 67-68x5-6"
+  - "Vertical pulldown 60x8"
+  - "Horizontal row 56-57x8"
+  - "DB press 24-25x8"
+
+medium_term_goals:
+  - "Bench 70x5-6"
+  - "Weighted pull-ups path: 10 bodyweight then +2.5kg"
+
+nutrition:
+  calories_bulk: "2500-2600"
+  calories_cut: "2200-2300"
+  protein_g: "120-130"
+  fat_g: "70-80"
+  carbs_g: "200-250"
