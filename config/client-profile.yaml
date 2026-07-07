@@ -4,7 +4,7 @@ general:
   age: 33
   birth_date: "1993-02-01"
   height_cm: 173
-  weight_kg: 74
+  weight_kg: 74.1
   body_type: ectomorph
   occupation: programmer
   sleep_hours: 8
