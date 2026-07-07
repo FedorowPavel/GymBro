@@ -13,6 +13,15 @@ logger = logging.getLogger(__name__)
 
 _client: Any | None = None
 
+# Fetch full history for personal bot (adjust if volume grows)
+MAX_WORKOUTS_IN_CONTEXT = 50
+
+KEY_LIFT_SLUGS = (
+    ("bench_press", "Жим лёжа"),
+    ("incline_db_press", "Жим на наклонной"),
+    ("lat_pulldown", "Тяга вертикального блока"),
+)
+
 
 def supabase_enabled(settings: Settings) -> bool:
     return bool(settings.supabase_url and settings.supabase_service_role_key)
@@ -94,13 +103,18 @@ def fetch_profile_context(settings: Settings, telegram_user_id: int) -> str | No
             client.table("workouts")
             .select("id, workout_date, split_focus, notes")
             .eq("telegram_user_id", uid)
-            .order("workout_date", desc=True)
-            .limit(5)
+            .order("workout_date", desc=False)
+            .limit(MAX_WORKOUTS_IN_CONTEXT)
             .execute()
             .data
         )
 
-        workout_lines = _format_recent_workouts(client, workouts)
+        sets_by_workout, slug_by_workout = _load_all_sets(client, workouts)
+        workout_lines = _format_all_workouts(workouts, sets_by_workout)
+        summary_lines = _format_session_summary(workouts)
+        progression_lines = _format_key_lift_progressions(
+            workouts, sets_by_workout, slug_by_workout
+        )
 
         p = profile[0]
         lines = [
@@ -109,12 +123,13 @@ def fetch_profile_context(settings: Settings, telegram_user_id: int) -> str | No
             f"- Weight: {p.get('weight_kg')} kg, height: {p.get('height_cm')} cm",
             f"- Body type: {p.get('body_type')}, goal: {p.get('goal')}",
             f"- Notes: {p.get('notes') or '—'}",
+            f"- Total logged workouts: {len(workouts)}",
         ]
         if p.get("nutrition"):
             lines.append(f"- Nutrition: {json.dumps(p['nutrition'], ensure_ascii=False)}")
 
         if split:
-            lines.append("\n## Training split")
+            lines.append("\n## Training split (plan)")
             for row in split:
                 lines.append(f"- {row['day_label']}: {row['focus']}")
 
@@ -135,8 +150,16 @@ def fetch_profile_context(settings: Settings, telegram_user_id: int) -> str | No
             for row in bans:
                 lines.append(f"- {row['exercise_name']} — {row.get('reason') or 'banned'}")
 
+        if summary_lines:
+            lines.append("\n## Workout session counts (full log)")
+            lines.extend(summary_lines)
+
+        if progression_lines:
+            lines.append("\n## Key lift progression (every logged session)")
+            lines.extend(progression_lines)
+
         if workout_lines:
-            lines.append("\n## Recent workouts (logged)")
+            lines.append("\n## Full workout log (all sessions, chronological)")
             lines.extend(workout_lines)
 
         return "\n".join(lines)
@@ -145,9 +168,11 @@ def fetch_profile_context(settings: Settings, telegram_user_id: int) -> str | No
         return None
 
 
-def _format_recent_workouts(client: Any, workouts: list[dict[str, Any]]) -> list[str]:
+def _load_all_sets(
+    client: Any, workouts: list[dict[str, Any]]
+) -> tuple[dict[str, dict[str, list[tuple[float, int]]]], dict[str, dict[str, str]]]:
     if not workouts:
-        return []
+        return {}, {}
 
     workout_ids = [w["id"] for w in workouts]
     sets_rows = (
@@ -161,32 +186,91 @@ def _format_recent_workouts(client: Any, workouts: list[dict[str, Any]]) -> list
     by_workout: dict[str, dict[str, list[tuple[float, int]]]] = defaultdict(
         lambda: defaultdict(list)
     )
-    workout_meta = {w["id"]: w for w in workouts}
+    slug_by_workout: dict[str, dict[str, str]] = defaultdict(dict)
 
     for row in sets_rows:
         wid = row["workout_id"]
         ex = row.get("exercises") or {}
         name = ex.get("name") or ex.get("slug") or "?"
+        slug = ex.get("slug") or ""
+        slug_by_workout[wid][name] = slug
         by_workout[wid][name].append((float(row["weight_kg"]), int(row["reps"])))
 
+    return by_workout, slug_by_workout
+
+
+def _format_session_summary(workouts: list[dict[str, Any]]) -> list[str]:
+    counts: dict[str, int] = defaultdict(int)
+    chest_related = 0
+    for w in workouts:
+        focus = w.get("split_focus") or "Unknown"
+        counts[focus] += 1
+        if "chest" in focus.lower() or focus == "Chest":
+            chest_related += 1
+
+    lines = [f"- Chest-related sessions (Chest / Chest + Biceps): **{chest_related}**"]
+    for focus, count in sorted(counts.items(), key=lambda x: (-x[1], x[0])):
+        lines.append(f"- {focus}: {count}")
+    return lines
+
+
+def _format_key_lift_progressions(
+    workouts: list[dict[str, Any]],
+    sets_by_workout: dict[str, dict[str, list[tuple[float, int]]]],
+    slug_by_workout: dict[str, dict[str, str]],
+) -> list[str]:
     lines: list[str] = []
-    for wid in workout_ids:
-        meta = workout_meta.get(wid)
-        if not meta:
-            continue
+    workout_dates = {w["id"]: w.get("workout_date") for w in workouts}
+
+    for slug, label in KEY_LIFT_SLUGS:
+        entries: list[str] = []
+        for w in workouts:
+            wid = w["id"]
+            exercises = sets_by_workout.get(wid, {})
+            slugs = slug_by_workout.get(wid, {})
+            for name, sets_data in exercises.items():
+                if slugs.get(name) != slug:
+                    continue
+                sets_data = sorted(sets_data)
+                w0, r0 = sets_data[0]
+                if all(s == sets_data[0] for s in sets_data):
+                    detail = f"{w0} kg × {r0} × {len(sets_data)}"
+                else:
+                    detail = ", ".join(f"{w}×{r}" for w, r in sets_data)
+                date = workout_dates.get(wid, "?")
+                focus = w.get("split_focus") or ""
+                entries.append(f"  - {date} ({focus}): {detail}")
+                break
+
+        if entries:
+            lines.append(f"**{label}:**")
+            lines.extend(entries)
+            lines.append("")
+
+    return lines
+
+
+def _format_all_workouts(
+    workouts: list[dict[str, Any]],
+    sets_by_workout: dict[str, dict[str, list[tuple[float, int]]]],
+) -> list[str]:
+    lines: list[str] = []
+    for meta in workouts:
+        wid = meta["id"]
         date = meta.get("workout_date")
         focus = meta.get("split_focus") or ""
         header = f"### {date}" + (f" ({focus})" if focus else "")
         lines.append(header)
-        exercises = by_workout.get(wid, {})
+        exercises = sets_by_workout.get(wid, {})
+        if not exercises:
+            lines.append("- (no sets logged)")
         for name, sets_data in exercises.items():
-            sets_data.sort(key=lambda x: x)
-            if len(sets_data) >= 1:
-                w0, r0 = sets_data[0]
-                if all(s == sets_data[0] for s in sets_data):
-                    lines.append(f"- {name}: {w0} kg × {r0} × {len(sets_data)}")
-                else:
-                    detail = ", ".join(f"{w}×{r}" for w, r in sets_data)
-                    lines.append(f"- {name}: {detail}")
+            sets_data = sorted(sets_data)
+            w0, r0 = sets_data[0]
+            if all(s == sets_data[0] for s in sets_data):
+                lines.append(f"- {name}: {w0} kg × {r0} × {len(sets_data)}")
+            else:
+                detail = ", ".join(f"{w}×{r}" for w, r in sets_data)
+                lines.append(f"- {name}: {detail}")
         lines.append("")
     return lines
