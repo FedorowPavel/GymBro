@@ -1,5 +1,3 @@
-"""Write parsed workout logs to Supabase."""
-
 from __future__ import annotations
 
 import logging
@@ -84,6 +82,59 @@ def save_workout_log(
         )
     except Exception:  # noqa: BLE001
         logger.exception("Failed to save workout log for user %s", telegram_user_id)
+        return None
+
+
+def get_last_log_for_exercise(
+    settings: Settings,
+    telegram_user_id: int,
+    exercise_slug: str,
+) -> tuple[float, int, int] | None:
+    if not supabase_enabled(settings):
+        return None
+    try:
+        from supabase_store import _get_client
+
+        client = _get_client(settings)
+        exercise = (
+            client.table("exercises")
+            .select("id")
+            .eq("slug", exercise_slug)
+            .limit(1)
+            .execute()
+            .data
+        )
+        if not exercise:
+            return None
+        exercise_id = exercise[0]["id"]
+
+        workouts = (
+            client.table("workouts")
+            .select("id, workout_date")
+            .eq("telegram_user_id", telegram_user_id)
+            .order("workout_date", desc=True)
+            .limit(40)
+            .execute()
+            .data
+        )
+        for workout in workouts or []:
+            sets = (
+                client.table("workout_sets")
+                .select("weight_kg, reps, set_number")
+                .eq("workout_id", workout["id"])
+                .eq("exercise_id", exercise_id)
+                .order("set_number")
+                .execute()
+                .data
+            )
+            if not sets:
+                continue
+            weight = float(sets[0]["weight_kg"])
+            reps = int(sets[0]["reps"])
+            return weight, reps, len(sets)
+        return None
+    except Exception:  # noqa: BLE001
+        logger.exception("Failed to load last log for %s", exercise_slug)
         return None
 
 

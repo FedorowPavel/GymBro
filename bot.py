@@ -8,11 +8,13 @@ import logging
 from telegram import Message, Update
 from telegram.constants import ChatAction, ParseMode
 from telegram.error import BadRequest
-from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
+from telegram.ext import Application, CallbackQueryHandler, CommandHandler, ContextTypes, MessageHandler, filters
 from telegram.request import HTTPXRequest
 
 from agent_service import GymBroAgentService
 from config import Settings
+from exercise_menu import main_reply_keyboard
+from log_wizard import handle_log_button, handle_log_callback, handle_wizard_text, start_log_wizard
 from telegram_format import markdown_to_telegram_html
 from voice_transcriber import transcribe_telegram_voice, voice_transcription_enabled
 from workout_flow import prepare_agent_message
@@ -22,12 +24,13 @@ logger = logging.getLogger(__name__)
 WELCOME = """Привет! Я Gym Bro — твой персональный тренер 💪
 
 Могу:
-• составить программу на тренировку (например: «иду на грудь и бицепс, пропиши программу»)
-• записать подходы текстом или голосом (например: «жим лёжа 66 на 6 три подхода»)
+• записать подходы кнопками (➕ Добавить упражнение) или текстом/голосом
+• составить программу на тренировку
 • разобрать прогресс
 
 Команды:
 /help — справка
+/log — добавить упражнение кнопками
 /reset — новый диалог с агентом
 /stop — остановить текущий запрос
 """
@@ -173,10 +176,19 @@ def build_application(settings: Settings, agent_service: GymBroAgentService) -> 
         if not _is_allowed(settings, update.effective_user and update.effective_user.id):
             await deny(update)
             return
-        await update.message.reply_text(WELCOME)
+        await update.message.reply_text(WELCOME, reply_markup=main_reply_keyboard())
 
     async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await start(update, context)
+
+    async def log_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        user = update.effective_user
+        message = update.message
+        if not _is_allowed(settings, user and user.id):
+            await deny(update)
+            return
+        if message:
+            await start_log_wizard(message, context)
 
     async def reset(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         user = update.effective_user
@@ -205,6 +217,11 @@ def build_application(settings: Settings, agent_service: GymBroAgentService) -> 
             return
         if not _is_allowed(settings, user.id):
             await deny(update)
+            return
+
+        if await handle_log_button(message, context):
+            return
+        if await handle_wizard_text(settings, message, context, user.id):
             return
 
         status_msg = await message.reply_text(STATUS_WAITING)
@@ -261,10 +278,20 @@ def build_application(settings: Settings, agent_service: GymBroAgentService) -> 
             header=header,
         )
 
+    async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        user = update.effective_user
+        if not _is_allowed(settings, user and user.id):
+            if update.callback_query:
+                await update.callback_query.answer("Доступ запрещён.", show_alert=True)
+            return
+        await handle_log_callback(settings, update, context, user.id)
+
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("help", help_cmd))
+    app.add_handler(CommandHandler("log", log_cmd))
     app.add_handler(CommandHandler("reset", reset))
     app.add_handler(CommandHandler("stop", stop_cmd))
+    app.add_handler(CallbackQueryHandler(on_callback))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, on_text))
     app.add_handler(MessageHandler(filters.VOICE | filters.AUDIO, on_voice))
     return app

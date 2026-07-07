@@ -79,6 +79,11 @@ def _looks_like_program_request(text: str) -> bool:
     return any(hint in norm for hint in _PROGRAM_HINTS)
 
 
+def parse_weight_reps_sets(text: str) -> tuple[float, int, int] | None:
+    """Parse weight×reps×sets from a short notation like 66×7×3."""
+    return _extract_numbers(text)
+
+
 def _extract_numbers(text: str) -> tuple[float, int, int] | None:
     for pattern in (_WEIGHT_SETS_RE, _SPACE_TRIPLE_RE):
         match = pattern.search(text)
