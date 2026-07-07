@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import date
 
 from config import Settings
+from profile_flow import try_update_body_weight
 from workout_parser import ParseConfidence, ParsedWorkoutLog, format_log_summary, try_parse_workout_log
 from workout_writer import save_workout_log
 
@@ -45,6 +46,10 @@ def prepare_agent_message(
   - Clear workout log → save to Supabase, tell agent data is saved
   - Ambiguous log → agent asks to clarify (no save)
     """
+    weight_update = try_update_body_weight(settings, telegram_user_id, text)
+    if weight_update is not None:
+        return weight_update
+
     parsed = try_parse_workout_log(settings, text)
     if parsed is None:
         return text, None

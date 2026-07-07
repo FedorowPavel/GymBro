@@ -170,6 +170,32 @@ def fetch_profile_context(settings: Settings, telegram_user_id: int) -> str | No
         return None
 
 
+def update_profile_weight(
+    settings: Settings,
+    telegram_user_id: int,
+    weight_kg: float,
+) -> bool:
+    """Update body weight in profile. Returns True on success."""
+    if not supabase_enabled(settings):
+        return False
+    try:
+        client = _get_client(settings)
+        result = (
+            client.table("profile")
+            .update({"weight_kg": weight_kg})
+            .eq("telegram_user_id", telegram_user_id)
+            .execute()
+        )
+        return bool(result.data)
+    except Exception:  # noqa: BLE001
+        logger.exception(
+            "Failed to update profile weight for user %s to %s",
+            telegram_user_id,
+            weight_kg,
+        )
+        return False
+
+
 def fetch_exercise_progression(
     settings: Settings,
     telegram_user_id: int,
