@@ -23,6 +23,13 @@ async def main() -> None:
     agent_service = GymBroAgentService(settings)
     await agent_service.start()
 
+    from supabase_store import supabase_enabled
+
+    if supabase_enabled(settings):
+        logger.info("Supabase enabled: %s", settings.supabase_url)
+    else:
+        logger.info("Supabase not configured — using local client-profile.yaml")
+
     app = build_application(settings, agent_service)
     await app.initialize()
     await app.start()

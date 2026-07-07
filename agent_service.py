@@ -19,7 +19,7 @@ from cursor_sdk import (
 )
 
 from config import Settings
-from prompts import build_system_prompt
+from prompts import build_system_prompt, build_user_message
 
 logger = logging.getLogger(__name__)
 
@@ -105,7 +105,8 @@ class GymBroAgentService:
         on_progress: ProgressCallback | None = None,
     ) -> str:
         agent = await self._get_agent(user_id)
-        run = await agent.send(message)
+        payload = build_user_message(self._settings, user_id, message)
+        run = await agent.send(payload)
         key = str(user_id)
         self._active_runs[key] = run
         try:
@@ -187,7 +188,7 @@ class GymBroAgentService:
                 self._stored_ids.pop(key, None)
 
         agent = await self._client.agents.create(options)
-        init_run = await agent.send(build_system_prompt(self._settings))
+        init_run = await agent.send(build_system_prompt(self._settings, user_id))
         await init_run.wait()
         self._agents[key] = agent
         self._stored_ids[key] = agent.agent_id

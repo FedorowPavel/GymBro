@@ -26,6 +26,8 @@ class Settings:
     agent_workspace: Path
     sessions_path: Path
     ask_timeout_seconds: float
+    supabase_url: str
+    supabase_service_role_key: str
 
 
 def _parse_user_ids(raw: str) -> frozenset[int]:
@@ -75,4 +77,8 @@ def load_settings() -> Settings:
         ).expanduser(),
         sessions_path=project_root / "data" / "sessions.json",
         ask_timeout_seconds=float(os.environ.get("AGENT_ASK_TIMEOUT_SECONDS", "300")),
+        supabase_url=os.environ.get("SUPABASE_URL", "").strip(),
+        supabase_service_role_key=os.environ.get(
+            "SUPABASE_SERVICE_ROLE_KEY", ""
+        ).strip(),
     )
