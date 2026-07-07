@@ -29,6 +29,7 @@ class Settings:
     agent_empty_retries: int
     supabase_url: str
     supabase_service_role_key: str
+    openai_api_key: str
 
 
 def _parse_user_ids(raw: str) -> frozenset[int]:
@@ -83,4 +84,5 @@ def load_settings() -> Settings:
         supabase_service_role_key=os.environ.get(
             "SUPABASE_SERVICE_ROLE_KEY", ""
         ).strip(),
+        openai_api_key=os.environ.get("OPENAI_API_KEY", "").strip(),
     )

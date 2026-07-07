@@ -29,6 +29,7 @@ git push
 | `AGENT_ASK_TIMEOUT_SECONDS` | `300` (или `600` для долгих ответов) |
 | `SUPABASE_URL` | `https://jdkoopavhaykgsghpwzx.supabase.co` |
 | `SUPABASE_SERVICE_ROLE_KEY` | service_role из Supabase → Settings → API |
+| `OPENAI_API_KEY` | ключ OpenAI для Whisper (голосовые) |
 
 `TELEGRAM_USER_ID` не обязателен — бот берёт id из входящего сообщения.
 

@@ -30,6 +30,13 @@ async def main() -> None:
     else:
         logger.info("Supabase not configured — using local client-profile.yaml")
 
+    from voice_transcriber import voice_transcription_enabled
+
+    if voice_transcription_enabled(settings):
+        logger.info("Voice transcription enabled (Whisper)")
+    else:
+        logger.info("Voice transcription disabled — set OPENAI_API_KEY to enable")
+
     app = build_application(settings, agent_service)
     await app.initialize()
     await app.start()
