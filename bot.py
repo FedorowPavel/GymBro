@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 
-from telegram import Message, Update
+from telegram import Message, ReplyKeyboardRemove, Update
 from telegram.constants import ChatAction, ParseMode
 from telegram.error import BadRequest
 from telegram.ext import Application, CallbackQueryHandler, CommandHandler, ContextTypes, MessageHandler, filters
@@ -34,8 +34,6 @@ WELCOME = """Привет! Я Gym Bro — твой персональный тр
 /stats — график прогресса
 /reset — новый диалог с агентом
 /stop — остановить текущий запрос
-
-Кнопка 📊 Прогресс внизу открывает график жима.
 """
 
 STATUS_WAITING = "🔄 Спросил агента Cursor, жду ответ…"
@@ -179,12 +177,23 @@ def build_application(settings: Settings, agent_service: GymBroAgentService) -> 
         if not _is_allowed(settings, update.effective_user and update.effective_user.id):
             await deny(update)
             return
-        keyboard = main_reply_keyboard(settings.miniapp_url)
+
+        url = settings.miniapp_url.strip().rstrip("/")
+        # Force-refresh reply keyboard (Telegram caches old layouts).
+        await update.message.reply_text("Обновляю меню…", reply_markup=ReplyKeyboardRemove())
+
+        keyboard = main_reply_keyboard(url or None)
         await update.message.reply_text(WELCOME, reply_markup=keyboard)
-        if settings.miniapp_url:
+
+        if url:
             await update.message.reply_text(
-                "График жима:",
-                reply_markup=progress_inline_keyboard(settings.miniapp_url),
+                "График жима — нажми кнопку:",
+                reply_markup=progress_inline_keyboard(url),
+            )
+        else:
+            await update.message.reply_text(
+                "⚠️ MINIAPP_URL не задан в Railway (сервис **бота**, не miniapp).\n"
+                "Добавь URL miniapp-сервиса и redeploy бота — появится кнопка 📊 Прогресс."
             )
 
     async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

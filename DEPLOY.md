@@ -82,11 +82,23 @@ Railway передаёт их как build args при `docker build`.
 ### 4. URL Mini App → бот
 
 1. Скопируй публичный URL miniapp-сервиса, например `https://gym-bro-miniapp.up.railway.app`
-2. В **bot** service добавь variable:
-   - `MINIAPP_URL` = этот URL
-3. Redeploy бота → в Telegram появится кнопка меню **📊 Прогресс**
+2. В **bot** service (Python, корень репо) добавь variable:
+   - `MINIAPP_URL` = этот URL (без `/` в конце)
+3. Redeploy **бота** → в Logs: `Mini App URL configured: https://...`
+4. В Telegram: `/start` → сообщение «График жима» с inline-кнопкой
 
-### 5. BotFather (опционально)
+**Частая ошибка:** `MINIAPP_URL` добавили в miniapp-сервис — нужно в **бот**.
+
+### 5. BotFather (для Web App кнопок)
+
+В @BotFather:
+
+1. `/mybots` → GymBro → **Bot Settings** → **Configure Mini App** → **Enable** → вставь тот же URL
+2. `/setdomain` → выбери бота → домен: `up.railway.app` (или полный `xxx.up.railway.app`)
+
+Без домена inline Web App кнопка может не работать — тогда жми **🌐 Открыть в браузере**.
+
+### 6. BotFather Menu Button (опционально)
 
 Можно также указать Web App URL в @BotFather → Bot Settings → Menu Button.
 

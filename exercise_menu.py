@@ -49,8 +49,12 @@ def main_reply_keyboard(miniapp_url: str | None = None) -> ReplyKeyboardMarkup:
 
 
 def progress_inline_keyboard(miniapp_url: str) -> InlineKeyboardMarkup:
+    url = miniapp_url.strip().rstrip("/")
     return InlineKeyboardMarkup(
-        [[InlineKeyboardButton(PROGRESS_BTN, web_app=WebAppInfo(url=miniapp_url))]]
+        [
+            [InlineKeyboardButton(PROGRESS_BTN, web_app=WebAppInfo(url=url))],
+            [InlineKeyboardButton("🌐 Открыть в браузере", url=url)],
+        ]
     )
 
 

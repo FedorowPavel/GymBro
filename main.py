@@ -37,6 +37,11 @@ async def main() -> None:
     else:
         logger.info("Voice transcription disabled — set OPENAI_API_KEY to enable")
 
+    if settings.miniapp_url:
+        logger.info("Mini App URL configured: %s", settings.miniapp_url.rstrip("/"))
+    else:
+        logger.warning("MINIAPP_URL is empty — progress button disabled")
+
     app = build_application(settings, agent_service)
     await app.initialize()
     await app.start()
