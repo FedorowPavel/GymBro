@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, ReplyKeyboardMarkup
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, ReplyKeyboardMarkup, WebAppInfo
 
 from config import Settings
 from exercise_resolver import load_catalog
 
 ADD_EXERCISE_BTN = "➕ Добавить упражнение"
+PROGRESS_BTN = "📊 Прогресс"
 
 MUSCLE_GROUPS: dict[str, str] = {
     "chest": "Грудь",
@@ -35,11 +36,21 @@ def slug_muscle_group(settings: Settings, slug: str) -> str | None:
     return _load_slug_muscle(settings).get(slug)
 
 
-def main_reply_keyboard() -> ReplyKeyboardMarkup:
+def main_reply_keyboard(miniapp_url: str | None = None) -> ReplyKeyboardMarkup:
+    rows: list[list[KeyboardButton]] = [[KeyboardButton(ADD_EXERCISE_BTN)]]
+    url = (miniapp_url or "").strip()
+    if url:
+        rows.append([KeyboardButton(PROGRESS_BTN, web_app=WebAppInfo(url=url))])
     return ReplyKeyboardMarkup(
-        [[KeyboardButton(ADD_EXERCISE_BTN)]],
+        rows,
         resize_keyboard=True,
         is_persistent=True,
+    )
+
+
+def progress_inline_keyboard(miniapp_url: str) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        [[InlineKeyboardButton(PROGRESS_BTN, web_app=WebAppInfo(url=miniapp_url))]]
     )
 
 

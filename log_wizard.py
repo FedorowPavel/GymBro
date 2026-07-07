@@ -92,7 +92,7 @@ async def handle_wizard_text(
     if parsed is None:
         await message.reply_text(
             "Не понял формат. Введи, например: 66×7×3 или 66 на 7 три подхода",
-            reply_markup=main_reply_keyboard(),
+            reply_markup=main_reply_keyboard(settings.miniapp_url),
         )
         return True
 
@@ -240,9 +240,12 @@ async def _save_and_confirm(
     try:
         if edit_message is not None:
             await edit_message.edit_text(text)
-            await edit_message.reply_text("➕ Добавить ещё", reply_markup=main_reply_keyboard())
+            await edit_message.reply_text(
+                "➕ Добавить ещё",
+                reply_markup=main_reply_keyboard(settings.miniapp_url),
+            )
         else:
-            await target.reply_text(text, reply_markup=main_reply_keyboard())
+            await target.reply_text(text, reply_markup=main_reply_keyboard(settings.miniapp_url))
     except Exception:  # noqa: BLE001
         logger.exception("Failed to send save confirmation")
-        await target.reply_text(text, reply_markup=main_reply_keyboard())
+        await target.reply_text(text, reply_markup=main_reply_keyboard(settings.miniapp_url))

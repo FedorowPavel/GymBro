@@ -13,7 +13,7 @@ from telegram.request import HTTPXRequest
 
 from agent_service import GymBroAgentService
 from config import Settings
-from exercise_menu import main_reply_keyboard
+from exercise_menu import PROGRESS_BTN, main_reply_keyboard, progress_inline_keyboard
 from log_wizard import handle_log_button, handle_log_callback, handle_wizard_text, start_log_wizard
 from telegram_format import markdown_to_telegram_html
 from voice_transcriber import transcribe_telegram_voice, voice_transcription_enabled
@@ -31,8 +31,11 @@ WELCOME = """Привет! Я Gym Bro — твой персональный тр
 Команды:
 /help — справка
 /log — добавить упражнение кнопками
+/stats — график прогресса
 /reset — новый диалог с агентом
 /stop — остановить текущий запрос
+
+Кнопка 📊 Прогресс внизу открывает график жима.
 """
 
 STATUS_WAITING = "🔄 Спросил агента Cursor, жду ответ…"
@@ -176,10 +179,30 @@ def build_application(settings: Settings, agent_service: GymBroAgentService) -> 
         if not _is_allowed(settings, update.effective_user and update.effective_user.id):
             await deny(update)
             return
-        await update.message.reply_text(WELCOME, reply_markup=main_reply_keyboard())
+        keyboard = main_reply_keyboard(settings.miniapp_url)
+        await update.message.reply_text(WELCOME, reply_markup=keyboard)
+        if settings.miniapp_url:
+            await update.message.reply_text(
+                "График жима:",
+                reply_markup=progress_inline_keyboard(settings.miniapp_url),
+            )
 
     async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await start(update, context)
+
+    async def stats_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        if not _is_allowed(settings, update.effective_user and update.effective_user.id):
+            await deny(update)
+            return
+        if not settings.miniapp_url:
+            await update.message.reply_text(
+                "Mini App не настроен. Добавь MINIAPP_URL в переменные бота на Railway."
+            )
+            return
+        await update.message.reply_text(
+            "Жим лёжа — прогресс:",
+            reply_markup=progress_inline_keyboard(settings.miniapp_url),
+        )
 
     async def log_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         user = update.effective_user
@@ -220,6 +243,8 @@ def build_application(settings: Settings, agent_service: GymBroAgentService) -> 
             return
 
         if await handle_log_button(message, context):
+            return
+        if message.text == PROGRESS_BTN:
             return
         if await handle_wizard_text(settings, message, context, user.id):
             return
@@ -289,6 +314,7 @@ def build_application(settings: Settings, agent_service: GymBroAgentService) -> 
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("help", help_cmd))
     app.add_handler(CommandHandler("log", log_cmd))
+    app.add_handler(CommandHandler("stats", stats_cmd))
     app.add_handler(CommandHandler("reset", reset))
     app.add_handler(CommandHandler("stop", stop_cmd))
     app.add_handler(CallbackQueryHandler(on_callback))

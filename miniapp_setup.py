@@ -9,9 +9,12 @@ logger = logging.getLogger(__name__)
 
 async def setup_miniapp_menu(settings: Settings, bot) -> None:
     """Set Telegram menu button → Mini App (if MINIAPP_URL is configured)."""
-    url = settings.miniapp_url.strip()
+    url = settings.miniapp_url.strip().rstrip("/")
     if not url:
         logger.info("MINIAPP_URL not set — menu button skipped")
+        return
+    if not url.startswith("https://"):
+        logger.warning("MINIAPP_URL must be https:// — got: %s", url)
         return
     try:
         await bot.set_chat_menu_button(
