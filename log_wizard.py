@@ -92,7 +92,7 @@ async def handle_wizard_text(
     if parsed is None:
         await message.reply_text(
             "Не понял формат. Введи, например: 66×7×3 или 66 на 7 три подхода",
-            reply_markup=main_reply_keyboard(settings.miniapp_url),
+            reply_markup=main_reply_keyboard(settings.miniapp_url, telegram_user_id=user_id),
         )
         return True
 
@@ -242,10 +242,14 @@ async def _save_and_confirm(
             await edit_message.edit_text(text)
             await edit_message.reply_text(
                 "➕ Добавить ещё",
-                reply_markup=main_reply_keyboard(settings.miniapp_url),
+                reply_markup=main_reply_keyboard(settings.miniapp_url, telegram_user_id=user_id),
             )
         else:
-            await target.reply_text(text, reply_markup=main_reply_keyboard(settings.miniapp_url))
+            await target.reply_text(
+                text, reply_markup=main_reply_keyboard(settings.miniapp_url, telegram_user_id=user_id)
+            )
     except Exception:  # noqa: BLE001
         logger.exception("Failed to send save confirmation")
-        await target.reply_text(text, reply_markup=main_reply_keyboard(settings.miniapp_url))
+        await target.reply_text(
+            text, reply_markup=main_reply_keyboard(settings.miniapp_url, telegram_user_id=user_id)
+        )

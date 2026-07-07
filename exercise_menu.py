@@ -36,11 +36,27 @@ def slug_muscle_group(settings: Settings, slug: str) -> str | None:
     return _load_slug_muscle(settings).get(slug)
 
 
-def main_reply_keyboard(miniapp_url: str | None = None) -> ReplyKeyboardMarkup:
+def miniapp_url_for_user(miniapp_url: str, telegram_user_id: int) -> str:
+    base = miniapp_url.strip().rstrip("/")
+    return f"{base}?uid={telegram_user_id}"
+
+
+def main_reply_keyboard(
+    miniapp_url: str | None = None,
+    *,
+    telegram_user_id: int | None = None,
+) -> ReplyKeyboardMarkup:
     rows: list[list[KeyboardButton]] = [[KeyboardButton(ADD_EXERCISE_BTN)]]
-    url = (miniapp_url or "").strip()
-    if url:
-        rows.append([KeyboardButton(PROGRESS_BTN, web_app=WebAppInfo(url=url))])
+    url = (miniapp_url or "").strip().rstrip("/")
+    if url and telegram_user_id:
+        rows.append(
+            [
+                KeyboardButton(
+                    PROGRESS_BTN,
+                    web_app=WebAppInfo(url=miniapp_url_for_user(url, telegram_user_id)),
+                )
+            ]
+        )
     return ReplyKeyboardMarkup(
         rows,
         resize_keyboard=True,
@@ -48,8 +64,8 @@ def main_reply_keyboard(miniapp_url: str | None = None) -> ReplyKeyboardMarkup:
     )
 
 
-def progress_inline_keyboard(miniapp_url: str) -> InlineKeyboardMarkup:
-    url = miniapp_url.strip().rstrip("/")
+def progress_inline_keyboard(miniapp_url: str, telegram_user_id: int) -> InlineKeyboardMarkup:
+    url = miniapp_url_for_user(miniapp_url, telegram_user_id)
     return InlineKeyboardMarkup(
         [
             [InlineKeyboardButton(PROGRESS_BTN, web_app=WebAppInfo(url=url))],

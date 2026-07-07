@@ -13,35 +13,50 @@ function formatDateLabel(isoDate: string): string {
   return `${day}.${month}`;
 }
 
-function asOne<T>(value: T | T[]): T {
-  return Array.isArray(value) ? value[0] : value;
-}
-
 export async function fetchBenchPressProgress(
   supabase: SupabaseClient,
   telegramUserId: number,
 ): Promise<BenchSessionPoint[]> {
-  const { data, error } = await supabase
-    .from("workout_sets")
-    .select(
-      `
-      weight_kg,
-      reps,
-      set_number,
-      workouts!inner (
-        workout_date,
-        telegram_user_id
-      ),
-      exercises!inner (
-        slug
-      )
-    `,
-    )
-    .eq("exercises.slug", "bench_press")
-    .eq("workouts.telegram_user_id", telegramUserId);
+  const { data: exercise, error: exerciseError } = await supabase
+    .from("exercises")
+    .select("id")
+    .eq("slug", "bench_press")
+    .maybeSingle();
 
-  if (error) {
-    throw new Error(error.message);
+  if (exerciseError) {
+    throw new Error(exerciseError.message);
+  }
+  if (!exercise) {
+    return [];
+  }
+
+  const { data: workouts, error: workoutsError } = await supabase
+    .from("workouts")
+    .select("id, workout_date")
+    .eq("telegram_user_id", telegramUserId)
+    .order("workout_date", { ascending: true });
+
+  if (workoutsError) {
+    throw new Error(workoutsError.message);
+  }
+  if (!workouts?.length) {
+    return [];
+  }
+
+  const workoutIds = workouts.map((w) => w.id);
+  const dateByWorkoutId = new Map(workouts.map((w) => [w.id, w.workout_date]));
+
+  const { data: sets, error: setsError } = await supabase
+    .from("workout_sets")
+    .select("workout_id, weight_kg, reps, set_number")
+    .eq("exercise_id", exercise.id)
+    .in("workout_id", workoutIds);
+
+  if (setsError) {
+    throw new Error(setsError.message);
+  }
+  if (!sets?.length) {
+    return [];
   }
 
   const byDate = new Map<
@@ -49,9 +64,11 @@ export async function fetchBenchPressProgress(
     Array<{ weight_kg: number; reps: number; set_number: number }>
   >();
 
-  for (const row of data ?? []) {
-    const workout = asOne(row.workouts as { workout_date: string } | { workout_date: string }[]);
-    const date = workout.workout_date;
+  for (const row of sets) {
+    const date = dateByWorkoutId.get(row.workout_id);
+    if (!date) {
+      continue;
+    }
     const bucket = byDate.get(date) ?? [];
     bucket.push({
       weight_kg: Number(row.weight_kg),
@@ -63,16 +80,16 @@ export async function fetchBenchPressProgress(
 
   const points: BenchSessionPoint[] = [];
 
-  for (const [date, sets] of byDate.entries()) {
-    const maxWeight = Math.max(...sets.map((s) => s.weight_kg));
-    const topSets = sets.filter((s) => s.weight_kg === maxWeight);
+  for (const [date, sessionSets] of byDate.entries()) {
+    const maxWeight = Math.max(...sessionSets.map((s) => s.weight_kg));
+    const topSets = sessionSets.filter((s) => s.weight_kg === maxWeight);
     const reps = Math.max(...topSets.map((s) => s.reps));
     points.push({
       date,
       label: formatDateLabel(date),
       maxWeight,
       reps,
-      sets: sets.length,
+      sets: sessionSets.length,
     });
   }
 

@@ -179,16 +179,16 @@ def build_application(settings: Settings, agent_service: GymBroAgentService) -> 
             return
 
         url = settings.miniapp_url.strip().rstrip("/")
-        # Force-refresh reply keyboard (Telegram caches old layouts).
+        user_id = update.effective_user.id
         await update.message.reply_text("Обновляю меню…", reply_markup=ReplyKeyboardRemove())
 
-        keyboard = main_reply_keyboard(url or None)
+        keyboard = main_reply_keyboard(url or None, telegram_user_id=user_id)
         await update.message.reply_text(WELCOME, reply_markup=keyboard)
 
         if url:
             await update.message.reply_text(
                 "График жима — нажми кнопку:",
-                reply_markup=progress_inline_keyboard(url),
+                reply_markup=progress_inline_keyboard(url, user_id),
             )
         else:
             await update.message.reply_text(
@@ -208,9 +208,10 @@ def build_application(settings: Settings, agent_service: GymBroAgentService) -> 
                 "Mini App не настроен. Добавь MINIAPP_URL в переменные бота на Railway."
             )
             return
+        url = settings.miniapp_url.strip().rstrip("/")
         await update.message.reply_text(
             "Жим лёжа — прогресс:",
-            reply_markup=progress_inline_keyboard(settings.miniapp_url),
+            reply_markup=progress_inline_keyboard(url, update.effective_user.id),
         )
 
     async def log_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

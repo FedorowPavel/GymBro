@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { BenchPressChart } from "./components/BenchPressChart";
 import { fetchBenchPressProgress, type BenchSessionPoint } from "./lib/benchPress";
 import { getSupabase, supabaseConfigured } from "./lib/supabase";
-import { applyTelegramTheme, getTelegramUserId } from "./lib/telegram";
+import { applyTelegramTheme, waitForTelegramUserId } from "./lib/telegram";
 
 export default function App() {
   const [points, setPoints] = useState<BenchSessionPoint[]>([]);
@@ -26,9 +26,9 @@ export default function App() {
         return;
       }
 
-      const userId = getTelegramUserId();
+      const userId = await waitForTelegramUserId();
       if (!userId) {
-        setError("Не удалось определить Telegram user id. Открой из бота Gym Bro.");
+        setError("Не удалось определить Telegram user id. Открой через кнопку 📊 Прогресс в боте.");
         setLoading(false);
         return;
       }

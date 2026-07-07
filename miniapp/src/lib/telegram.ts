@@ -1,10 +1,70 @@
 import WebApp from "@twa-dev/sdk";
 
-/** Telegram user id from Mini App context, or dev fallback from env. */
+declare global {
+  interface Window {
+    Telegram?: {
+      WebApp?: {
+        initData?: string;
+        initDataUnsafe?: {
+          user?: { id?: number };
+        };
+        ready?: () => void;
+      };
+    };
+  }
+}
+
+function parseUserIdFromInitData(initData: string): number | null {
+  if (!initData) {
+    return null;
+  }
+  const params = new URLSearchParams(initData);
+  const userRaw = params.get("user");
+  if (!userRaw) {
+    return null;
+  }
+  try {
+    const user = JSON.parse(userRaw) as { id?: number };
+    return typeof user.id === "number" ? user.id : null;
+  } catch {
+    return null;
+  }
+}
+
+function readUserIdFromUrl(): number | null {
+  const fromQuery = new URLSearchParams(window.location.search).get("uid");
+  if (!fromQuery) {
+    return null;
+  }
+  const parsed = Number(fromQuery);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function readUserIdFromSdk(): number | null {
+  const fromUnsafe = WebApp.initDataUnsafe.user?.id;
+  if (fromUnsafe) {
+    return fromUnsafe;
+  }
+
+  const fromWindowUnsafe = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
+  if (fromWindowUnsafe) {
+    return fromWindowUnsafe;
+  }
+
+  const initData = WebApp.initData || window.Telegram?.WebApp?.initData || "";
+  return parseUserIdFromInitData(initData);
+}
+
+/** Telegram user id from Mini App context, URL ?uid=, or dev fallback. */
 export function getTelegramUserId(): number | null {
-  const fromTelegram = WebApp.initDataUnsafe.user?.id;
+  const fromTelegram = readUserIdFromSdk();
   if (fromTelegram) {
     return fromTelegram;
+  }
+
+  const fromUrl = readUserIdFromUrl();
+  if (fromUrl) {
+    return fromUrl;
   }
 
   const fallback = import.meta.env.VITE_DEV_TELEGRAM_USER_ID as string | undefined;
@@ -14,6 +74,28 @@ export function getTelegramUserId(): number | null {
   }
 
   return null;
+}
+
+/** Wait until Telegram injects user id (first paint can be too early). */
+export function waitForTelegramUserId(timeoutMs = 3000): Promise<number | null> {
+  return new Promise((resolve) => {
+    const started = Date.now();
+
+    const tick = () => {
+      const id = getTelegramUserId();
+      if (id) {
+        resolve(id);
+        return;
+      }
+      if (Date.now() - started >= timeoutMs) {
+        resolve(null);
+        return;
+      }
+      window.setTimeout(tick, 100);
+    };
+
+    tick();
+  });
 }
 
 export function applyTelegramTheme(): void {
