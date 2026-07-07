@@ -8,6 +8,7 @@ from config import Settings
 from supabase_store import fetch_profile_context, supabase_enabled
 
 
+
 def build_system_prompt(settings: Settings, telegram_user_id: int) -> str:
     rules = _read_rules(settings.agent_workspace)
     rules_block = f"\n## Coach rules (from config/coach-rules.md)\n{rules}\n" if rules else ""
