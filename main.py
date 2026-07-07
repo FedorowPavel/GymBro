@@ -40,6 +40,11 @@ async def main() -> None:
     app = build_application(settings, agent_service)
     await app.initialize()
     await app.start()
+
+    from miniapp_setup import setup_miniapp_menu
+
+    await setup_miniapp_menu(settings, app.bot)
+
     await app.updater.start_polling(drop_pending_updates=True)
 
     logger.info("Gym Bro bot is running (allowed users: %s)", settings.allowed_user_ids)

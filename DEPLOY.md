@@ -54,6 +54,55 @@ Starting Cursor client (runtime=cloud)
 
 Каждый `git push` в `main` → Railway пересобирает бота.
 
+---
+
+## Mini App (второй сервис на Railway)
+
+Один репозиторий, **два сервиса** в проекте Railway.
+
+### 1. Новый сервис
+
+1. В проекте Railway → **+ New** → **GitHub Repo** → тот же `gym-bro`
+2. **Settings → Root Directory** → `miniapp`
+3. Railway подхватит `miniapp/Dockerfile`
+
+### 2. Variables (miniapp service)
+
+| Variable | Значение |
+|----------|----------|
+| `VITE_SUPABASE_URL` | `https://jdkoopavhaykgsghpwzx.supabase.co` |
+| `VITE_SUPABASE_ANON_KEY` | **anon** key из Supabase → Settings → API (не service_role!) |
+
+Railway передаёт их как build args при `docker build`.
+
+### 3. Supabase RLS
+
+Один раз выполни `supabase/miniapp_rls.sql` в SQL Editor (read-only для anon).
+
+### 4. URL Mini App → бот
+
+1. Скопируй публичный URL miniapp-сервиса, например `https://gym-bro-miniapp.up.railway.app`
+2. В **bot** service добавь variable:
+   - `MINIAPP_URL` = этот URL
+3. Redeploy бота → в Telegram появится кнопка меню **📊 Прогресс**
+
+### 5. BotFather (опционально)
+
+Можно также указать Web App URL в @BotFather → Bot Settings → Menu Button.
+
+### 6. Локальная разработка miniapp
+
+```bash
+cd miniapp
+cp .env.example .env   # anon key + VITE_DEV_TELEGRAM_USER_ID
+npm install
+npm run dev
+```
+
+Открой `http://localhost:5173` — без Telegram сработает dev user id.
+
+---
+
 ## Локально vs Railway
 
 | | Mac | Railway |

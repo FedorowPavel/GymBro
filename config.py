@@ -30,6 +30,7 @@ class Settings:
     supabase_url: str
     supabase_service_role_key: str
     openai_api_key: str
+    miniapp_url: str
 
 
 def _parse_user_ids(raw: str) -> frozenset[int]:
@@ -85,4 +86,5 @@ def load_settings() -> Settings:
             "SUPABASE_SERVICE_ROLE_KEY", ""
         ).strip(),
         openai_api_key=os.environ.get("OPENAI_API_KEY", "").strip(),
+        miniapp_url=os.environ.get("MINIAPP_URL", "").strip(),
     )

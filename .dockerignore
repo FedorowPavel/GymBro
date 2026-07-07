@@ -6,3 +6,5 @@ __pycache__
 data/
 *.pyc
 .DS_Store
+miniapp/node_modules
+miniapp/dist
