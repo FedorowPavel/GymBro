@@ -8,12 +8,48 @@ export type BenchSessionPoint = {
   sets: number;
 };
 
+type RpcRow = {
+  workout_date: string;
+  max_weight: number;
+  reps: number;
+  sets_count: number;
+};
+
 function formatDateLabel(isoDate: string): string {
   const [, month, day] = isoDate.split("-");
   return `${day}.${month}`;
 }
 
-export async function fetchBenchPressProgress(
+function mapRpcRows(rows: RpcRow[]): BenchSessionPoint[] {
+  return rows.map((row) => ({
+    date: row.workout_date,
+    label: formatDateLabel(row.workout_date),
+    maxWeight: Number(row.max_weight),
+    reps: Number(row.reps),
+    sets: Number(row.sets_count),
+  }));
+}
+
+async function fetchViaRpc(
+  supabase: SupabaseClient,
+  telegramUserId: number,
+): Promise<BenchSessionPoint[] | null> {
+  const { data, error } = await supabase.rpc("get_bench_press_progress", {
+    p_telegram_user_id: telegramUserId,
+  });
+
+  if (error) {
+    // Function not deployed yet — fall back to direct table queries.
+    if (error.code === "PGRST202" || error.message.includes("get_bench_press_progress")) {
+      return null;
+    }
+    throw new Error(error.message);
+  }
+
+  return mapRpcRows((data as RpcRow[]) ?? []);
+}
+
+async function fetchViaTables(
   supabase: SupabaseClient,
   telegramUserId: number,
 ): Promise<BenchSessionPoint[]> {
@@ -95,4 +131,15 @@ export async function fetchBenchPressProgress(
 
   points.sort((a, b) => a.date.localeCompare(b.date));
   return points;
+}
+
+export async function fetchBenchPressProgress(
+  supabase: SupabaseClient,
+  telegramUserId: number,
+): Promise<BenchSessionPoint[]> {
+  const viaRpc = await fetchViaRpc(supabase, telegramUserId);
+  if (viaRpc !== null) {
+    return viaRpc;
+  }
+  return fetchViaTables(supabase, telegramUserId);
 }

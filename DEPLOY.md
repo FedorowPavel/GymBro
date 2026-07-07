@@ -75,9 +75,15 @@ Starting Cursor client (runtime=cloud)
 
 Railway передаёт их как build args при `docker build`.
 
-### 3. Supabase RLS
+### 3. Supabase RLS + RPC
 
-Один раз выполни `supabase/miniapp_rls.sql` в SQL Editor (read-only для anon).
+**Обязательно** один раз выполни `supabase/miniapp_rls.sql` в SQL Editor.
+
+Без этого мини-апп с anon-ключом получает пустые ответы (RLS блокирует таблицы) — на экране будет «Пока нет записей», хотя данные в базе есть.
+
+Скрипт добавляет:
+- read-only политики для `profile`, `exercises`, `workouts`, `workout_sets`
+- функцию `get_bench_press_progress(uid)` — мини-апп вызывает её первой
 
 ### 4. URL Mini App → бот
 
