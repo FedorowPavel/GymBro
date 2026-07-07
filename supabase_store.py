@@ -8,6 +8,7 @@ from collections import defaultdict
 from typing import Any
 
 from config import Settings
+from exercise_resolver import all_progression_slugs, format_alias_reference, load_catalog
 
 logger = logging.getLogger(__name__)
 
@@ -15,12 +16,6 @@ _client: Any | None = None
 
 # Fetch full history for personal bot (adjust if volume grows)
 MAX_WORKOUTS_IN_CONTEXT = 50
-
-KEY_LIFT_SLUGS = (
-    ("bench_press", "Жим лёжа"),
-    ("incline_db_press", "Жим на наклонной"),
-    ("lat_pulldown", "Тяга вертикального блока"),
-)
 
 
 def supabase_enabled(settings: Settings) -> bool:
@@ -113,8 +108,12 @@ def fetch_profile_context(settings: Settings, telegram_user_id: int) -> str | No
         workout_lines = _format_all_workouts(workouts, sets_by_workout)
         summary_lines = _format_session_summary(workouts)
         progression_lines = _format_key_lift_progressions(
-            workouts, sets_by_workout, slug_by_workout
+            workouts,
+            sets_by_workout,
+            slug_by_workout,
+            all_progression_slugs(settings),
         )
+        alias_lines = format_alias_reference(settings)
 
         p = profile[0]
         lines = [
@@ -154,6 +153,9 @@ def fetch_profile_context(settings: Settings, telegram_user_id: int) -> str | No
             lines.append("\n## Workout session counts (full log)")
             lines.extend(summary_lines)
 
+        if alias_lines:
+            lines.append("\n" + alias_lines)
+
         if progression_lines:
             lines.append("\n## Key lift progression (every logged session)")
             lines.extend(progression_lines)
@@ -165,6 +167,46 @@ def fetch_profile_context(settings: Settings, telegram_user_id: int) -> str | No
         return "\n".join(lines)
     except Exception:  # noqa: BLE001
         logger.exception("Failed to fetch Supabase context for user %s", telegram_user_id)
+        return None
+
+
+def fetch_exercise_progression(
+    settings: Settings,
+    telegram_user_id: int,
+    slugs: list[str],
+) -> str | None:
+    """Progression lines for specific exercises (when user names them in chat)."""
+    if not supabase_enabled(settings) or not slugs:
+        return None
+    try:
+        client = _get_client(settings)
+        uid = telegram_user_id
+        workouts = (
+            client.table("workouts")
+            .select("id, workout_date, split_focus, notes")
+            .eq("telegram_user_id", uid)
+            .order("workout_date", desc=False)
+            .limit(MAX_WORKOUTS_IN_CONTEXT)
+            .execute()
+            .data
+        )
+        sets_by_workout, slug_by_workout = _load_all_sets(client, workouts)
+        catalog = load_catalog(settings)
+        slug_labels = [
+            (slug, str((catalog.get(slug) or {}).get("canonical") or slug))
+            for slug in slugs
+        ]
+        lines = _format_key_lift_progressions(
+            workouts,
+            sets_by_workout,
+            slug_by_workout,
+            slug_labels,
+        )
+        if not lines:
+            return None
+        return "## Focused exercise history (matched from user message)\n" + "\n".join(lines)
+    except Exception:  # noqa: BLE001
+        logger.exception("Failed to fetch exercise progression for %s", slugs)
         return None
 
 
@@ -218,11 +260,12 @@ def _format_key_lift_progressions(
     workouts: list[dict[str, Any]],
     sets_by_workout: dict[str, dict[str, list[tuple[float, int]]]],
     slug_by_workout: dict[str, dict[str, str]],
+    slug_labels: list[tuple[str, str]],
 ) -> list[str]:
     lines: list[str] = []
     workout_dates = {w["id"]: w.get("workout_date") for w in workouts}
 
-    for slug, label in KEY_LIFT_SLUGS:
+    for slug, label in slug_labels:
         entries: list[str] = []
         for w in workouts:
             wid = w["id"]

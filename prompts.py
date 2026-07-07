@@ -5,8 +5,12 @@ from __future__ import annotations
 from pathlib import Path
 
 from config import Settings
-from supabase_store import fetch_profile_context, supabase_enabled
-
+from exercise_resolver import describe_matches, find_slugs_in_text, format_alias_reference
+from supabase_store import (
+    fetch_exercise_progression,
+    fetch_profile_context,
+    supabase_enabled,
+)
 
 
 def build_system_prompt(settings: Settings, telegram_user_id: int) -> str:
@@ -21,11 +25,14 @@ def build_system_prompt(settings: Settings, telegram_user_id: int) -> str:
         else:
             profile_block = (
                 "## Profile\n"
-                "(Supabase configured but no data loaded — check TELEGRAM_USER_ID / profile row.)\n\n"
+                "(Supabase configured but no data loaded — check profile row.)\n\n"
                 + _yaml_fallback(settings)
             )
     else:
+        alias_block = format_alias_reference(settings)
         profile_block = "## Client profile (local file)\n```yaml\n" + _yaml_fallback(settings) + "\n```"
+        if alias_block:
+            profile_block += "\n\n" + alias_block
 
     return f"""You are Gym Bro — a personal strength coach for one client (Pavel).
 
@@ -37,7 +44,7 @@ Reply in the same language the user writes (usually Russian). Be concise, practi
 ## Your role
 1. Help log workouts (weight × reps × sets) and give feedback on progress.
 2. Suggest the next session based on history, goals, and active injuries/restrictions.
-3. Never invent numbers — use only data from Supabase context above. The full workout log and key lift progressions are included; do not say older data is missing unless the context block is empty.
+3. Never invent numbers — use only data from Supabase context above. Use the **Exercise name aliases** section to map informal names (e.g. «французский жим» → Французский жим (EZ)).
 4. Respect all exercise bans (no barbell squat, no deadlift, no upright row, etc.).
 5. Progression: +1–2 kg or +1 rep when form and recovery allow; always leave 1–2 reps in reserve.
 6. Rep ranges: 5–8 base, 8–10 accessories; 3 base sets, 2–3 accessory sets.
@@ -49,17 +56,27 @@ Reply in the same language the user writes (usually Russian). Be concise, practi
 
 
 def build_user_message(settings: Settings, telegram_user_id: int, text: str) -> str:
-    """Refresh latest DB snapshot before each user message (same session)."""
+    """Refresh DB snapshot; highlight exercises mentioned in the user message."""
     if not supabase_enabled(settings):
         return text
+
+    matched_slugs = find_slugs_in_text(settings, text)
+    focused_parts: list[str] = []
+    if matched_slugs:
+        match_block = describe_matches(settings, matched_slugs)
+        if match_block:
+            focused_parts.append(match_block)
+        progression = fetch_exercise_progression(settings, telegram_user_id, matched_slugs)
+        if progression:
+            focused_parts.append(progression)
+
     snapshot = fetch_profile_context(settings, telegram_user_id)
-    if not snapshot:
+    if not snapshot and not focused_parts:
         return text
-    return (
-        "[Fresh data from Supabase — use for this reply]\n"
-        f"{snapshot}\n\n"
-        f"---\nUser: {text}"
-    )
+
+    header = "[Fresh data from Supabase — use for this reply]\n"
+    body = "\n\n".join(part for part in [*focused_parts, snapshot] if part)
+    return f"{header}{body}\n\n---\nUser: {text}"
 
 
 def _yaml_fallback(settings: Settings) -> str:

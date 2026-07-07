@@ -1,0 +1,136 @@
+# Maps chat phrases → exercise slug in Supabase (exercises.slug).
+# Matching is case-insensitive; ё → е. Longer aliases win over shorter ones.
+
+bench_press:
+  canonical: Жим лёжа
+  aliases:
+    - жим штанги лёжа
+    - жим штанги лежа
+    - жим лёжа штанга
+    - жим лежа штанга
+    - жим штанги лежа
+    - жим лёжа
+    - жим лежа
+    - жим на горизонтальной
+    - жим на горизонтали
+    - bench press
+    - bench
+
+incline_db_press:
+  canonical: Жим гантелей на наклонной
+  aliases:
+    - жим гантелей на наклонной
+    - жим гантелей наклон
+    - жим на наклонной
+    - жим на наклоне
+    - наклонный жим гантелей
+    - наклонный жим
+    - incline dumbbell press
+    - incline press
+
+db_curl:
+  canonical: Подъём гантелей на бицепс сидя
+  aliases:
+    - подъём гантелей на бицепс сидя
+    - подъем гантелей на бицепс сидя
+    - сгибания на бицепс сидя
+    - подъём на бицепс сидя
+    - подъем на бицепс сидя
+    - бицепс сидя
+    - сгибания с гантелями сидя
+    - dumbbell curl
+
+hammer_curl:
+  canonical: Молотки
+  aliases:
+    - молотки
+    - молот
+    - молотковые сгибания
+    - hammer curl
+    - hammer curls
+
+lat_pulldown:
+  canonical: Тяга вертикального блока
+  aliases:
+    - тяга вертикального блока
+    - вертикальная тяга блока
+    - тяга верхнего блока
+    - вертикальная тяга
+    - тяга сверху
+    - верхняя тяга
+    - широкая тяга сверху
+    - lat pulldown
+    - pulldown
+
+cable_row:
+  canonical: Тяга горизонтального блока
+  aliases:
+    - тяга горизонтального блока
+    - горизонтальная тяга блока
+    - горизонтальная тяга
+    - тяга нижнего блока
+    - тяга к поясу
+    - сидячая тяга блока
+    - cable row
+    - seated row
+
+ez_french_press:
+  canonical: Французский жим (EZ)
+  aliases:
+    - французский жим ez
+    - французский жим с ez
+    - французский жим на ez
+    - французский жим
+    - французский
+    - франц
+    - жим узким хватом лёжа
+    - жим узким хватом лежа
+    - разгибания на трицепс лёжа
+    - разгибания на трицепс лежа
+    - french press
+    - ez skull crusher
+    - skull crusher
+
+rope_pushdown:
+  canonical: Разгибания на блоке (верёвка)
+  aliases:
+    - разгибания на блоке верёвка
+    - разгибания на блоке веревка
+    - разгибания на верёвке
+    - разгибания на веревке
+    - разгибания на блоке
+    - тяга на трицепс
+    - pushdown
+    - triceps pushdown
+    - rope pushdown
+
+seated_db_press:
+  canonical: Жим гантелей сидя
+  aliases:
+    - жим гантелей сидя
+    - жим сидя гантели
+    - армейский жим гантелей
+    - жим сидя
+    - shoulder press seated
+    - seated dumbbell press
+
+lateral_raise:
+  canonical: Разведения стоя
+  aliases:
+    - разведения гантелей стоя
+    - разведения стоя
+    - махи в стороны
+    - махи гантелей в стороны
+    - средняя дельта
+    - lateral raise
+    - side raise
+
+rear_delt_fly:
+  canonical: Разведения в наклоне
+  aliases:
+    - разведения в наклоне
+    - разведения на заднюю дельту
+    - задняя дельта
+    - махи в наклоне
+    - rear delt fly
+    - reverse fly
