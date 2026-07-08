@@ -83,7 +83,7 @@ Railway передаёт их как build args при `docker build`.
 
 Скрипт добавляет:
 - read-only политики для `profile`, `exercises`, `workouts`, `workout_sets`
-- функцию `get_bench_press_progress(uid)` — мини-апп вызывает её первой
+- RPC для графиков: `get_user_muscle_groups`, `get_user_exercises_for_muscle`, `get_exercise_progress` (см. `supabase/miniapp_progress_rpc.sql`)
 
 ### 4. URL Mini App → бот
 

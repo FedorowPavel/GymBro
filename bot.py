@@ -13,7 +13,7 @@ from telegram.request import HTTPXRequest
 
 from agent_service import GymBroAgentService
 from config import Settings
-from exercise_menu import PROGRESS_BTN, main_reply_keyboard, progress_inline_keyboard
+from exercise_menu import PROGRESS_BTN, main_reply_keyboard
 from log_wizard import handle_log_button, handle_log_callback, handle_wizard_text, start_log_wizard
 from telegram_format import markdown_to_telegram_html
 from voice_transcriber import transcribe_telegram_voice, voice_transcription_enabled
@@ -31,7 +31,7 @@ WELCOME = """Привет! Я Gym Bro — твой персональный тр
 Команды:
 /help — справка
 /log — добавить упражнение кнопками
-/stats или stats — график прогресса (кнопка 📊 под «Добавить упражнение»)
+/stats или stats — открыть график (кнопка 📊 под «Добавить упражнение»)
 /reset — новый диалог с агентом
 /stop — остановить текущий запрос
 """
@@ -203,10 +203,8 @@ def build_application(settings: Settings, agent_service: GymBroAgentService) -> 
                 "Mini App не настроен. Добавь MINIAPP_URL в переменные бота на Railway."
             )
             return
-        url = settings.miniapp_url.strip().rstrip("/")
         await update.message.reply_text(
-            "Жим лёжа — прогресс:",
-            reply_markup=progress_inline_keyboard(url, update.effective_user.id),
+            "График прогресса — нажми 📊 Прогресс под «Добавить упражнение»."
         )
 
     async def log_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

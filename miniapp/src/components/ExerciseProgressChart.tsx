@@ -7,10 +7,10 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import type { BenchSessionPoint } from "../lib/benchPress";
+import type { SessionPoint } from "../lib/progress";
 
 type Props = {
-  data: BenchSessionPoint[];
+  data: SessionPoint[];
 };
 
 function CustomTooltip({
@@ -18,7 +18,7 @@ function CustomTooltip({
   payload,
 }: {
   active?: boolean;
-  payload?: Array<{ payload: BenchSessionPoint }>;
+  payload?: Array<{ payload: SessionPoint }>;
 }) {
   if (!active || !payload?.length) {
     return null;
@@ -42,7 +42,7 @@ function CustomTooltip({
   );
 }
 
-export function BenchPressChart({ data }: Props) {
+export function ExerciseProgressChart({ data }: Props) {
   return (
     <div className="chart-wrap">
       <ResponsiveContainer width="100%" height="100%">

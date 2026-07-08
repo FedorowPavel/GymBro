@@ -64,16 +64,6 @@ def main_reply_keyboard(
     )
 
 
-def progress_inline_keyboard(miniapp_url: str, telegram_user_id: int) -> InlineKeyboardMarkup:
-    url = miniapp_url_for_user(miniapp_url, telegram_user_id)
-    return InlineKeyboardMarkup(
-        [
-            [InlineKeyboardButton(PROGRESS_BTN, web_app=WebAppInfo(url=url))],
-            [InlineKeyboardButton("🌐 Открыть в браузере", url=url)],
-        ]
-    )
-
-
 def muscle_group_keyboard() -> InlineKeyboardMarkup:
     rows: list[list[InlineKeyboardButton]] = []
     row: list[InlineKeyboardButton] = []
