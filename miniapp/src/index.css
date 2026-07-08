@@ -153,3 +153,126 @@ body {
   font-size: 0.8rem;
   color: var(--tg-theme-hint-color, #6b7280);
 }
+
+.metric-toggle {
+  display: flex;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.chip-btn {
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: transparent;
+  color: var(--tg-theme-text-color, #1a1a1a);
+  padding: 8px 10px;
+  border-radius: 999px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.chip-btn.active {
+  background: rgba(37, 99, 235, 0.12);
+  border-color: rgba(37, 99, 235, 0.35);
+}
+
+.quick-log {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.quick-log-title {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.quick-log-subtitle {
+  margin: 4px 0 10px;
+  color: var(--tg-theme-hint-color, #6b7280);
+  font-size: 0.85rem;
+}
+
+.quick-log-last {
+  margin: 0 0 10px;
+  color: var(--tg-theme-hint-color, #6b7280);
+  font-size: 0.85rem;
+}
+
+.quick-log-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 12px;
+  align-items: end;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.85rem;
+}
+
+.input {
+  width: 100%;
+  height: 38px;
+  padding: 0 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: var(--tg-theme-secondary-bg-color, #fff);
+  color: var(--tg-theme-text-color, #1a1a1a);
+  font: inherit;
+}
+
+.quick-log-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.primary-btn,
+.secondary-btn {
+  height: 40px;
+  border-radius: 12px;
+  padding: 0 14px;
+  font: inherit;
+  cursor: pointer;
+  border: none;
+}
+
+.primary-btn {
+  flex: 1;
+  background: #2563eb;
+  color: #fff;
+}
+
+.primary-btn:disabled {
+  background: rgba(37, 99, 235, 0.4);
+  cursor: not-allowed;
+}
+
+.secondary-btn {
+  background: rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  color: var(--tg-theme-text-color, #1a1a1a);
+}
+
+.secondary-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.today-btn-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.today-btn {
+  flex: 1;
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(0, 0, 0, 0.03);
+  cursor: pointer;
+  font: inherit;
+}

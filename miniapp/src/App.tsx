@@ -1,13 +1,21 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ExerciseProgressChart } from "./components/ExerciseProgressChart";
+import { ExerciseTonnageChart } from "./components/ExerciseTonnageChart";
 import { ListPicker } from "./components/ListPicker";
+import { QuickLogPanel } from "./components/QuickLogPanel";
 import { muscleGroupLabel, sortMuscleGroups } from "./lib/muscleGroups";
 import {
   fetchExerciseProgress,
+  fetchExerciseTonnageProgress,
   fetchExercisesWithHistory,
   fetchMuscleGroupsWithHistory,
+  fetchLastExerciseLog,
+  fetchTodayWorkoutOverview,
+  logExerciseSession,
   type ExerciseOption,
+  type LastExerciseLog,
   type SessionPoint,
+  type TonnagePoint,
 } from "./lib/progress";
 import { getSupabase, supabaseConfigured } from "./lib/supabase";
 import { applyTelegramTheme, waitForTelegramUserId } from "./lib/telegram";
@@ -15,6 +23,7 @@ import { applyTelegramTheme, waitForTelegramUserId } from "./lib/telegram";
 type Screen =
   | { step: "muscle" }
   | { step: "exercise"; muscleGroup: string }
+  | { step: "today" }
   | { step: "chart"; muscleGroup: string; exerciseSlug: string; exerciseName: string };
 
 function sessionLabel(count: number): string {
@@ -37,7 +46,31 @@ export default function App() {
 
   const [muscleGroups, setMuscleGroups] = useState<string[]>([]);
   const [exercises, setExercises] = useState<ExerciseOption[]>([]);
-  const [points, setPoints] = useState<SessionPoint[]>([]);
+  const [maxPoints, setMaxPoints] = useState<SessionPoint[]>([]);
+  const [tonnagePoints, setTonnagePoints] = useState<TonnagePoint[]>([]);
+
+  const [metric, setMetric] = useState<"max" | "tonnage">("max");
+  const [lastLog, setLastLog] = useState<LastExerciseLog | null>(null);
+
+  // Quick log form values
+  const [weightKg, setWeightKg] = useState<string>("");
+  const [reps, setReps] = useState<number>(0);
+  const [sets, setSets] = useState<number>(0);
+  const [saving, setSaving] = useState(false);
+
+  // Today screen
+  const [todayFocus, setTodayFocus] = useState<string>("");
+  const [todayItems, setTodayItems] = useState<
+    Array<{
+      slug: string;
+      name: string;
+      muscleGroup: string;
+      isLoggedToday: boolean;
+      lastWeightKg: number | null;
+      lastReps: number | null;
+      lastSets: number | null;
+    }>
+  >([]);
 
   useEffect(() => {
     applyTelegramTheme();
@@ -124,26 +157,49 @@ export default function App() {
     [userId],
   );
 
+  function todayIsoLocal(): string {
+    const d = new Date();
+    // Convert to local date (avoid UTC shift).
+    const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+    return local.toISOString().slice(0, 10);
+  }
+
   const loadChart = useCallback(
     async (muscleGroup: string, exerciseSlug: string, exerciseName: string) => {
-      if (!userId) {
-        return;
-      }
+      if (!userId) return;
       const supabase = getSupabase();
-      if (!supabase) {
-        return;
-      }
+      if (!supabase) return;
 
+      setMetric("max");
       setLoading(true);
       setError(null);
-      setPoints([]);
+      setSaving(false);
+      setMaxPoints([]);
+      setTonnagePoints([]);
+      setLastLog(null);
+      setWeightKg("");
+      setReps(0);
+      setSets(0);
       setScreen({ step: "chart", muscleGroup, exerciseSlug, exerciseName });
 
       try {
-        const data = await fetchExerciseProgress(supabase, userId, exerciseSlug);
-        setPoints(data);
+        const [maxData, tonnageData, last] = await Promise.all([
+          fetchExerciseProgress(supabase, userId, exerciseSlug),
+          fetchExerciseTonnageProgress(supabase, userId, exerciseSlug),
+          fetchLastExerciseLog(supabase, userId, exerciseSlug),
+        ]);
+
+        setMaxPoints(maxData);
+        setTonnagePoints(tonnageData);
+        setLastLog(last);
+
+        if (last) {
+          setWeightKg(String(last.weightKg));
+          setReps(last.reps);
+          setSets(last.sets);
+        }
       } catch (err) {
-        const message = err instanceof Error ? err.message : "Не удалось загрузить график";
+        const message = err instanceof Error ? err.message : "Не удалось загрузить данные";
         setError(message);
         setScreen({ step: "exercise", muscleGroup });
       } finally {
@@ -153,10 +209,67 @@ export default function App() {
     [userId],
   );
 
+  const loadToday = useCallback(async () => {
+    if (!userId) return;
+    const supabase = getSupabase();
+    if (!supabase) return;
+
+    setLoading(true);
+    setError(null);
+    setTodayFocus("");
+    setTodayItems([]);
+    setScreen({ step: "today" });
+
+    try {
+      const overview = await fetchTodayWorkoutOverview(supabase, userId, todayIsoLocal());
+      setTodayFocus(overview.focus);
+      setTodayItems(overview.items);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Не удалось загрузить «сегодня»";
+      setError(message);
+      setScreen({ step: "muscle" });
+    } finally {
+      setLoading(false);
+    }
+  }, [userId]);
+
+  const refreshChartAfterSave = useCallback(
+    async (exerciseSlug: string) => {
+      if (!userId) return;
+      const supabase = getSupabase();
+      if (!supabase) return;
+
+      setError(null);
+      setSaving(false);
+
+      try {
+        const [maxData, tonnageData, last] = await Promise.all([
+          fetchExerciseProgress(supabase, userId, exerciseSlug),
+          fetchExerciseTonnageProgress(supabase, userId, exerciseSlug),
+          fetchLastExerciseLog(supabase, userId, exerciseSlug),
+        ]);
+
+        setMaxPoints(maxData);
+        setTonnagePoints(tonnageData);
+        setLastLog(last);
+        if (last) {
+          setWeightKg(String(last.weightKg));
+          setReps(last.reps);
+          setSets(last.sets);
+        }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Не удалось обновить после сохранения";
+        setError(message);
+      }
+    },
+    [userId],
+  );
+
   const goBack = () => {
     setError(null);
     if (screen.step === "chart") {
-      setPoints([]);
+      setMaxPoints([]);
+      setTonnagePoints([]);
       setScreen({ step: "exercise", muscleGroup: screen.muscleGroup });
       return;
     }
@@ -164,23 +277,55 @@ export default function App() {
       setExercises([]);
       setScreen({ step: "muscle" });
     }
+    if (screen.step === "today") {
+      setTodayItems([]);
+      setScreen({ step: "muscle" });
+    }
   };
 
-  const title =
-    screen.step === "muscle"
-      ? "Прогресс"
-      : screen.step === "exercise"
-        ? muscleGroupLabel(screen.muscleGroup)
+  const title = screen.step === "muscle"
+    ? "Прогресс"
+    : screen.step === "exercise"
+      ? muscleGroupLabel(screen.muscleGroup)
+      : screen.step === "today"
+        ? "Сегодня"
         : screen.exerciseName;
 
-  const subtitle =
-    screen.step === "muscle"
-      ? "Выбери группу мышц"
-      : screen.step === "exercise"
-        ? "Выбери упражнение"
-        : "Максимальный вес за сессию";
+  const subtitle = screen.step === "muscle"
+    ? "Выбери группу мышц"
+    : screen.step === "exercise"
+      ? "Выбери упражнение"
+      : screen.step === "today"
+        ? `Фокус: ${todayFocus || "—"}`
+        : metric === "max"
+          ? "Максимальный вес за сессию"
+          : "Тоннаж за сессию";
 
-  const latest = points.length > 0 ? points[points.length - 1] : null;
+  const latestMax = useMemo(() => {
+    if (maxPoints.length === 0) return null;
+    return maxPoints[maxPoints.length - 1];
+  }, [maxPoints]);
+
+  const latestTonnage = useMemo(() => {
+    if (tonnagePoints.length === 0) return null;
+    return tonnagePoints[tonnagePoints.length - 1];
+  }, [tonnagePoints]);
+
+  const prMax = useMemo(() => {
+    if (maxPoints.length === 0) return null;
+    const max = Math.max(...maxPoints.map((p) => p.maxWeight));
+    const p = maxPoints.find((x) => x.maxWeight === max) ?? null;
+    return p;
+  }, [maxPoints]);
+
+  const prTonnage = useMemo(() => {
+    if (tonnagePoints.length === 0) return null;
+    const maxT = Math.max(...tonnagePoints.map((p) => p.tonnage));
+    const p = tonnagePoints.find((x) => x.tonnage === maxT) ?? null;
+    return p;
+  }, [tonnagePoints]);
+
+  const currentExercise = screen.step === "chart" ? screen : null;
 
   return (
     <div className="app">
@@ -202,14 +347,21 @@ export default function App() {
         {!loading && error && <div className="state error">{error}</div>}
 
         {!loading && !error && screen.step === "muscle" && (
-          <ListPicker
-            items={muscleGroups.map((id) => ({
-              id,
-              title: muscleGroupLabel(id),
-            }))}
-            onPick={loadExercises}
-            emptyText="Пока нет записей тренировок."
-          />
+          <>
+            <div className="today-btn-row">
+              <button type="button" className="today-btn" onClick={loadToday}>
+                Сегодня
+              </button>
+            </div>
+            <ListPicker
+              items={muscleGroups.map((id) => ({
+                id,
+                title: muscleGroupLabel(id),
+              }))}
+              onPick={loadExercises}
+              emptyText="Пока нет записей тренировок."
+            />
+          </>
         )}
 
         {!loading && !error && screen.step === "exercise" && (
@@ -229,31 +381,194 @@ export default function App() {
           />
         )}
 
-        {!loading && !error && screen.step === "chart" && points.length === 0 && (
-          <div className="state">Пока нет записей по этому упражнению.</div>
+        {!loading && !error && screen.step === "today" && (
+          <ListPicker
+            items={todayItems.map((it) => ({
+              id: it.slug,
+              title: it.name,
+              subtitle: it.isLoggedToday
+                ? `${it.lastWeightKg ?? 0} кг × ${it.lastReps ?? 0} × ${it.lastSets ?? 0}`
+                : "Ещё не логировал",
+            }))}
+            onPick={(slug) => {
+              const item = todayItems.find((x) => x.slug === slug);
+              if (!item) return;
+              void loadChart(item.muscleGroup, item.slug, item.name);
+            }}
+            emptyText="На сегодня пока нет доступных упражнений с историей."
+          />
         )}
 
-        {!loading && !error && screen.step === "chart" && points.length > 0 && (
+        {!loading && !error && screen.step === "chart" && maxPoints.length === 0 && currentExercise && (
           <>
-            {latest && (
-              <p className="subtitle" style={{ marginBottom: 12 }}>
-                Последняя: <strong>{latest.maxWeight} кг</strong> × {latest.reps} ×{" "}
-                {latest.sets} ({latest.date})
+            <div className="state">Пока нет записей по этому упражнению.</div>
+            <QuickLogPanel
+              exerciseName={currentExercise.exerciseName}
+              lastLog={lastLog}
+              weightKg={weightKg}
+              reps={reps}
+              sets={sets}
+              onWeightKgChange={setWeightKg}
+              onRepsChange={setReps}
+              onSetsChange={setSets}
+              onRepeat={() => {
+                if (!lastLog) return;
+                setWeightKg(String(lastLog.weightKg));
+                setReps(lastLog.reps);
+                setSets(lastLog.sets);
+              }}
+              onSave={async () => {
+                if (!userId) return;
+                const supabase = getSupabase();
+                if (!supabase) return;
+                const w = Number(weightKg);
+                if (!Number.isFinite(w) || w <= 0) {
+                  setError("Введи корректный вес (кг).");
+                  return;
+                }
+                if (reps <= 0 || sets <= 0) {
+                  setError("Повторы и подходы должны быть > 0.");
+                  return;
+                }
+
+                setSaving(true);
+                setError(null);
+                try {
+                  await logExerciseSession(
+                    supabase,
+                    userId,
+                    currentExercise.exerciseSlug,
+                    w,
+                    reps,
+                    sets,
+                  );
+                  await refreshChartAfterSave(currentExercise.exerciseSlug);
+                } catch (err) {
+                  const message = err instanceof Error ? err.message : "Не удалось сохранить";
+                  setError(message);
+                } finally {
+                  setSaving(false);
+                }
+              }}
+              saving={saving}
+            />
+          </>
+        )}
+
+        {!loading && !error && screen.step === "chart" && maxPoints.length > 0 && currentExercise && (
+          <>
+            <div className="metric-toggle">
+              <button
+                type="button"
+                className={`chip-btn ${metric === "max" ? "active" : ""}`}
+                onClick={() => setMetric("max")}
+              >
+                Вес (max)
+              </button>
+              <button
+                type="button"
+                className={`chip-btn ${metric === "tonnage" ? "active" : ""}`}
+                onClick={() => setMetric("tonnage")}
+              >
+                Тоннаж
+              </button>
+            </div>
+
+            {metric === "max" && latestMax && (
+              <p className="subtitle" style={{ marginBottom: 10 }}>
+                Последняя: <strong>{latestMax.maxWeight} кг</strong> × {latestMax.reps} ×{" "}
+                {latestMax.sets} ({latestMax.date})
               </p>
             )}
-            <ExerciseProgressChart data={points} />
-            <p className="legend">Ось Y — максимальный вес за сессию (кг)</p>
+
+            {metric === "tonnage" && latestTonnage && (
+              <p className="subtitle" style={{ marginBottom: 10 }}>
+                Последняя: <strong>{latestTonnage.tonnage.toFixed(1)}</strong> ton ({latestTonnage.date})
+              </p>
+            )}
+
+            {metric === "max" && prMax && (
+              <p className="subtitle" style={{ marginBottom: 12 }}>
+                PR: <strong>{prMax.maxWeight} кг</strong> × {prMax.reps} × {prMax.sets} ({prMax.date})
+              </p>
+            )}
+
+            {metric === "tonnage" && prTonnage && (
+              <p className="subtitle" style={{ marginBottom: 12 }}>
+                PR тоннажа: <strong>{prTonnage.tonnage.toFixed(1)}</strong> ton ({prTonnage.date})
+              </p>
+            )}
+
+            {metric === "max" && <ExerciseProgressChart data={maxPoints} />}
+            {metric === "tonnage" && <ExerciseTonnageChart data={tonnagePoints} />}
+            <p className="legend">
+              {metric === "max" ? "Ось Y — максимальный вес за сессию (кг)" : "Ось Y — тоннаяж за сессию"}
+            </p>
 
             <ul className="session-list">
-              {[...points].reverse().slice(0, 8).map((p) => (
-                <li key={p.date}>
-                  <span className="date">{p.date}</span>
-                  <span>
-                    {p.maxWeight} кг × {p.reps} × {p.sets}
-                  </span>
-                </li>
-              ))}
+              {[...maxPoints]
+                .reverse()
+                .slice(0, 8)
+                .map((p) => (
+                  <li key={p.date}>
+                    <span className="date">{p.date}</span>
+                    <span>
+                      {p.maxWeight} кг × {p.reps} × {p.sets}
+                    </span>
+                  </li>
+                ))}
             </ul>
+
+            <QuickLogPanel
+              exerciseName={currentExercise.exerciseName}
+              lastLog={lastLog}
+              weightKg={weightKg}
+              reps={reps}
+              sets={sets}
+              onWeightKgChange={setWeightKg}
+              onRepsChange={setReps}
+              onSetsChange={setSets}
+              onRepeat={() => {
+                if (!lastLog) return;
+                setWeightKg(String(lastLog.weightKg));
+                setReps(lastLog.reps);
+                setSets(lastLog.sets);
+              }}
+              onSave={async () => {
+                if (!userId) return;
+                const supabase = getSupabase();
+                if (!supabase) return;
+                const w = Number(weightKg);
+                if (!Number.isFinite(w) || w <= 0) {
+                  setError("Введи корректный вес (кг).");
+                  return;
+                }
+                if (reps <= 0 || sets <= 0) {
+                  setError("Повторы и подходы должны быть > 0.");
+                  return;
+                }
+
+                setSaving(true);
+                setError(null);
+                try {
+                  await logExerciseSession(
+                    supabase,
+                    userId,
+                    currentExercise.exerciseSlug,
+                    w,
+                    reps,
+                    sets,
+                  );
+                  await refreshChartAfterSave(currentExercise.exerciseSlug);
+                } catch (err) {
+                  const message = err instanceof Error ? err.message : "Не удалось сохранить";
+                  setError(message);
+                } finally {
+                  setSaving(false);
+                }
+              }}
+              saving={saving}
+            />
           </>
         )}
       </div>
