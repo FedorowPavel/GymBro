@@ -13,18 +13,38 @@ function toPickerItems(items: WorkoutSessionItem[]) {
     title: it.name,
     subtitle: it.isLoggedToday
       ? `${it.lastWeightKg ?? 0} кг × ${it.lastReps ?? 0} × ${it.lastSets ?? 0}`
-      : "Ещё не логировал",
+      : it.sessionCount > 0
+        ? `${it.sessionCount} в истории`
+        : "Не в истории",
   }));
 }
 
 export function WorkoutSessionPicker({ items, onPick }: Props) {
   const [expanded, setExpanded] = useState(false);
 
-  const topItems = useMemo(() => items.slice(0, 3), [items]);
-  const moreItems = useMemo(() => items.slice(3), [items]);
+  const { topItems, moreItems } = useMemo(() => {
+    const withHistory = items
+      .filter((it) => it.sessionCount > 0)
+      .sort((a, b) => b.sessionCount - a.sessionCount || a.name.localeCompare(b.name));
+    const top = withHistory.slice(0, 3);
+    const topSlugs = new Set(top.map((it) => it.slug));
+    const more = items.filter((it) => !topSlugs.has(it.slug));
+    return { topItems: top, moreItems: more };
+  }, [items]);
 
   if (items.length === 0) {
-    return <div className="state">Нет упражнений с историей в этой группе.</div>;
+    return <div className="state">Нет упражнений для этой группы.</div>;
+  }
+
+  if (topItems.length === 0) {
+    return (
+      <div className="workout-session-picker">
+        <p className="subtitle" style={{ marginBottom: 12 }}>
+          Пока нет истории — выбери упражнение из списка:
+        </p>
+        <ListPicker items={toPickerItems(items)} onPick={onPick} />
+      </div>
+    );
   }
 
   return (
@@ -39,7 +59,7 @@ export function WorkoutSessionPicker({ items, onPick }: Props) {
             onClick={() => setExpanded((v) => !v)}
             aria-expanded={expanded}
           >
-            <span>{expanded ? "Скрыть редкие упражнения" : `Показать ещё (${moreItems.length})`}</span>
+            <span>{expanded ? "Скрыть остальные" : `Показать ещё (${moreItems.length})`}</span>
             <span className="workout-more-chevron">{expanded ? "▲" : "▼"}</span>
           </button>
 
