@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { FloatingRestTimer } from "./components/FloatingRestTimer";
 import { ExerciseProgressChart } from "./components/ExerciseProgressChart";
 import { ExerciseTonnageChart } from "./components/ExerciseTonnageChart";
 import { ListPicker } from "./components/ListPicker";
@@ -613,6 +614,8 @@ export default function App() {
           </>
         )}
       </div>
+
+      <FloatingRestTimer />
     </div>
   );
 }
