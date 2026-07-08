@@ -40,7 +40,7 @@ async def main() -> None:
     if settings.miniapp_url:
         logger.info("Mini App URL configured: %s", settings.miniapp_url.rstrip("/"))
     else:
-        logger.warning("MINIAPP_URL is empty — progress button disabled")
+        logger.warning("MINIAPP_URL is empty — dynamics button disabled")
 
     app = build_application(settings, agent_service)
     await app.initialize()

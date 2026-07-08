@@ -8,7 +8,7 @@ from config import Settings
 from exercise_resolver import load_catalog
 
 ADD_EXERCISE_BTN = "➕ Добавить упражнение"
-PROGRESS_BTN = "📊 Прогресс"
+DYNAMICS_BTN = "📊 Динамика"
 
 MUSCLE_GROUPS: dict[str, str] = {
     "chest": "Грудь",
@@ -52,7 +52,7 @@ def main_reply_keyboard(
         rows.append(
             [
                 KeyboardButton(
-                    PROGRESS_BTN,
+                    DYNAMICS_BTN,
                     web_app=WebAppInfo(url=miniapp_url_for_user(url, telegram_user_id)),
                 )
             ]

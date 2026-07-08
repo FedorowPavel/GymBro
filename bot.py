@@ -13,7 +13,7 @@ from telegram.request import HTTPXRequest
 
 from agent_service import GymBroAgentService
 from config import Settings
-from exercise_menu import PROGRESS_BTN, main_reply_keyboard
+from exercise_menu import DYNAMICS_BTN, main_reply_keyboard
 from log_wizard import handle_log_button, handle_log_callback, handle_wizard_text, start_log_wizard
 from telegram_format import markdown_to_telegram_html
 from voice_transcriber import transcribe_telegram_voice, voice_transcription_enabled
@@ -188,7 +188,7 @@ def build_application(settings: Settings, agent_service: GymBroAgentService) -> 
         if not url:
             await update.message.reply_text(
                 "⚠️ MINIAPP_URL не задан в Railway (сервис **бота**, не miniapp).\n"
-                "Добавь URL miniapp-сервиса и redeploy бота — появится кнопка 📊 Прогресс."
+                "Добавь URL miniapp-сервиса и redeploy бота — появится кнопка 📊 Динамика."
             )
 
     async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -204,7 +204,7 @@ def build_application(settings: Settings, agent_service: GymBroAgentService) -> 
             )
             return
         await update.message.reply_text(
-            "График прогресса — нажми 📊 Прогресс под «Добавить упражнение»."
+            "График прогресса — нажми 📊 Динамика под «Добавить упражнение»."
         )
 
     async def log_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -247,7 +247,7 @@ def build_application(settings: Settings, agent_service: GymBroAgentService) -> 
 
         if await handle_log_button(message, context):
             return
-        if message.text == PROGRESS_BTN:
+        if message.text == DYNAMICS_BTN:
             return
         if message.text.strip().lower() == "stats":
             await stats_cmd(update, context)
