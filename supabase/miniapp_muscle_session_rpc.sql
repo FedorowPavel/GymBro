@@ -1,5 +1,7 @@
 -- Manual workout picker: exercises for one muscle group + today's log status.
 
+drop function if exists public.get_muscle_session_overview(bigint, text, date);
+
 create or replace function public.get_muscle_session_overview(
   p_telegram_user_id bigint,
   p_muscle_group text,
@@ -9,6 +11,7 @@ returns table (
   slug text,
   name text,
   muscle_group text,
+  session_count bigint,
   is_logged_today boolean,
   last_weight_kg numeric,
   last_reps smallint,
@@ -23,17 +26,13 @@ as $$
     select
       e.slug,
       e.name,
-      e.muscle_group
+      e.muscle_group,
+      count(distinct w.workout_date)::bigint as session_count
     from public.exercises e
+    join public.workouts w on w.telegram_user_id = p_telegram_user_id
+    join public.workout_sets ws on ws.workout_id = w.id and ws.exercise_id = e.id
     where e.muscle_group = p_muscle_group
-      and exists (
-        select 1
-        from public.workouts w
-        join public.workout_sets ws on ws.workout_id = w.id
-        where w.telegram_user_id = p_telegram_user_id
-          and ws.exercise_id = e.id
-      )
-    order by e.name
+    group by e.slug, e.name, e.muscle_group
   ),
   today_workouts as (
     select w.id, w.created_at
@@ -65,6 +64,7 @@ as $$
     ets.slug,
     ets.name,
     ets.muscle_group,
+    ets.session_count,
     (lts.exercise_id is not null) as is_logged_today,
     lts.weight_kg as last_weight_kg,
     lts.reps as last_reps,
@@ -72,7 +72,7 @@ as $$
   from exercises_to_suggest ets
   left join public.exercises e on e.slug = ets.slug
   left join last_today_sets lts on lts.exercise_id = e.id
-  order by is_logged_today desc, ets.name asc;
+  order by ets.session_count desc, is_logged_today desc, ets.name asc;
 $$;
 
 revoke all on function public.get_muscle_session_overview(bigint, text, date) from public;

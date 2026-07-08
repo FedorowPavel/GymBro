@@ -38,6 +38,7 @@ export type WorkoutSessionItem = {
   slug: string;
   name: string;
   muscleGroup: string;
+  sessionCount: number;
   isLoggedToday: boolean;
   lastWeightKg: number | null;
   lastReps: number | null;
@@ -68,6 +69,7 @@ type WorkoutSessionRpcRow = {
   slug: string;
   name: string;
   muscle_group: string;
+  session_count: number;
   is_logged_today: boolean;
   last_weight_kg: number | null;
   last_reps: number | null;
@@ -234,6 +236,7 @@ export async function fetchMuscleSessionOverview(
     slug: row.slug,
     name: row.name,
     muscleGroup: row.muscle_group,
+    sessionCount: Number(row.session_count),
     isLoggedToday: Boolean(row.is_logged_today),
     lastWeightKg: row.last_weight_kg == null ? null : Number(row.last_weight_kg),
     lastReps: row.last_reps == null ? null : Number(row.last_reps),

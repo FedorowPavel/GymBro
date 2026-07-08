@@ -4,6 +4,7 @@ import { ExerciseProgressChart } from "./components/ExerciseProgressChart";
 import { ExerciseTonnageChart } from "./components/ExerciseTonnageChart";
 import { ListPicker } from "./components/ListPicker";
 import { QuickLogPanel } from "./components/QuickLogPanel";
+import { WorkoutSessionPicker } from "./components/WorkoutSessionPicker";
 import { muscleGroupLabel, sortMuscleGroups, WORKOUT_PICKER_ORDER } from "./lib/muscleGroups";
 import {
   fetchExerciseProgress,
@@ -424,20 +425,14 @@ export default function App() {
         )}
 
         {!loading && !error && screen.step === "workout_session" && (
-          <ListPicker
-            items={workoutSessionItems.map((it) => ({
-              id: it.slug,
-              title: it.name,
-              subtitle: it.isLoggedToday
-                ? `${it.lastWeightKg ?? 0} кг × ${it.lastReps ?? 0} × ${it.lastSets ?? 0}`
-                : "Ещё не логировал",
-            }))}
+          <WorkoutSessionPicker
+            key={screen.muscleGroup}
+            items={workoutSessionItems}
             onPick={(slug) => {
               const item = workoutSessionItems.find((x) => x.slug === slug);
               if (!item) return;
               void loadChart(screen.muscleGroup, item.slug, item.name, true);
             }}
-            emptyText="Нет упражнений с историей в этой группе."
           />
         )}
 

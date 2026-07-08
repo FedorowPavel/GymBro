@@ -309,3 +309,35 @@ body {
   font-variant-numeric: tabular-nums;
   line-height: 1;
 }
+
+.workout-session-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.workout-more-section {
+  margin-top: 8px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  padding-top: 8px;
+}
+
+.workout-more-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 12px 4px;
+  border: none;
+  background: transparent;
+  color: var(--tg-theme-hint-color, #6b7280);
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+  text-align: left;
+}
+
+.workout-more-chevron {
+  font-size: 0.75rem;
+  margin-left: 8px;
+}
