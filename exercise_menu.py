@@ -46,19 +46,17 @@ def main_reply_keyboard(
     *,
     telegram_user_id: int | None = None,
 ) -> ReplyKeyboardMarkup:
-    rows: list[list[KeyboardButton]] = [[KeyboardButton(ADD_EXERCISE_BTN)]]
     url = (miniapp_url or "").strip().rstrip("/")
+    row: list[KeyboardButton] = [KeyboardButton(ADD_EXERCISE_BTN)]
     if url and telegram_user_id:
-        rows.append(
-            [
-                KeyboardButton(
-                    DYNAMICS_BTN,
-                    web_app=WebAppInfo(url=miniapp_url_for_user(url, telegram_user_id)),
-                )
-            ]
+        row.append(
+            KeyboardButton(
+                DYNAMICS_BTN,
+                web_app=WebAppInfo(url=miniapp_url_for_user(url, telegram_user_id)),
+            )
         )
     return ReplyKeyboardMarkup(
-        rows,
+        [row],
         resize_keyboard=True,
         is_persistent=True,
     )
