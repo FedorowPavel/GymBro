@@ -90,7 +90,7 @@ export default function App() {
 
       const id = await waitForTelegramUserId();
       if (!id) {
-        setError("Не удалось определить Telegram user id. Открой через кнопку 📊 Dynamics Plus в боте.");
+        setError("Не удалось определить Telegram user id. Открой через кнопку 📊 Динамика в боте.");
         setLoading(false);
         return;
       }
@@ -311,7 +311,7 @@ export default function App() {
 
   const title =
     screen.step === "muscle"
-      ? "Dynamics Plus"
+      ? "Динамика"
       : screen.step === "exercise"
         ? muscleGroupLabel(screen.muscleGroup)
         : screen.step === "pick_workout"
