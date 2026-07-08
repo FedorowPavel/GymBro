@@ -3,19 +3,20 @@ import { ExerciseProgressChart } from "./components/ExerciseProgressChart";
 import { ExerciseTonnageChart } from "./components/ExerciseTonnageChart";
 import { ListPicker } from "./components/ListPicker";
 import { QuickLogPanel } from "./components/QuickLogPanel";
-import { muscleGroupLabel, sortMuscleGroups } from "./lib/muscleGroups";
+import { muscleGroupLabel, sortMuscleGroups, WORKOUT_PICKER_ORDER } from "./lib/muscleGroups";
 import {
   fetchExerciseProgress,
   fetchExerciseTonnageProgress,
   fetchExercisesWithHistory,
   fetchMuscleGroupsWithHistory,
   fetchLastExerciseLog,
-  fetchTodayWorkoutOverview,
+  fetchMuscleSessionOverview,
   logExerciseSession,
   type ExerciseOption,
   type LastExerciseLog,
   type SessionPoint,
   type TonnagePoint,
+  type WorkoutSessionItem,
 } from "./lib/progress";
 import { getSupabase, supabaseConfigured } from "./lib/supabase";
 import { applyTelegramTheme, waitForTelegramUserId } from "./lib/telegram";
@@ -23,8 +24,15 @@ import { applyTelegramTheme, waitForTelegramUserId } from "./lib/telegram";
 type Screen =
   | { step: "muscle" }
   | { step: "exercise"; muscleGroup: string }
-  | { step: "today" }
-  | { step: "chart"; muscleGroup: string; exerciseSlug: string; exerciseName: string };
+  | { step: "pick_workout" }
+  | { step: "workout_session"; muscleGroup: string }
+  | {
+      step: "chart";
+      muscleGroup: string;
+      exerciseSlug: string;
+      exerciseName: string;
+      fromWorkout: boolean;
+    };
 
 function sessionLabel(count: number): string {
   const mod10 = count % 10;
@@ -58,19 +66,8 @@ export default function App() {
   const [sets, setSets] = useState<number>(0);
   const [saving, setSaving] = useState(false);
 
-  // Today screen
-  const [todayFocus, setTodayFocus] = useState<string>("");
-  const [todayItems, setTodayItems] = useState<
-    Array<{
-      slug: string;
-      name: string;
-      muscleGroup: string;
-      isLoggedToday: boolean;
-      lastWeightKg: number | null;
-      lastReps: number | null;
-      lastSets: number | null;
-    }>
-  >([]);
+  // Workout session (manual muscle pick)
+  const [workoutSessionItems, setWorkoutSessionItems] = useState<WorkoutSessionItem[]>([]);
 
   useEffect(() => {
     applyTelegramTheme();
@@ -165,7 +162,12 @@ export default function App() {
   }
 
   const loadChart = useCallback(
-    async (muscleGroup: string, exerciseSlug: string, exerciseName: string) => {
+    async (
+      muscleGroup: string,
+      exerciseSlug: string,
+      exerciseName: string,
+      fromWorkout: boolean,
+    ) => {
       if (!userId) return;
       const supabase = getSupabase();
       if (!supabase) return;
@@ -180,7 +182,7 @@ export default function App() {
       setWeightKg("");
       setReps(0);
       setSets(0);
-      setScreen({ step: "chart", muscleGroup, exerciseSlug, exerciseName });
+      setScreen({ step: "chart", muscleGroup, exerciseSlug, exerciseName, fromWorkout });
 
       try {
         const [maxData, tonnageData, last] = await Promise.all([
@@ -209,29 +211,42 @@ export default function App() {
     [userId],
   );
 
-  const loadToday = useCallback(async () => {
-    if (!userId) return;
-    const supabase = getSupabase();
-    if (!supabase) return;
+  const loadWorkoutSession = useCallback(
+    async (muscleGroup: string) => {
+      if (!userId) return;
+      const supabase = getSupabase();
+      if (!supabase) return;
 
-    setLoading(true);
+      setLoading(true);
+      setError(null);
+      setWorkoutSessionItems([]);
+      setScreen({ step: "workout_session", muscleGroup });
+
+      try {
+        const items = await fetchMuscleSessionOverview(
+          supabase,
+          userId,
+          muscleGroup,
+          todayIsoLocal(),
+        );
+        setWorkoutSessionItems(items);
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : "Не удалось загрузить упражнения тренировки";
+        setError(message);
+        setScreen({ step: "pick_workout" });
+      } finally {
+        setLoading(false);
+      }
+    },
+    [userId],
+  );
+
+  const openPickWorkout = useCallback(() => {
     setError(null);
-    setTodayFocus("");
-    setTodayItems([]);
-    setScreen({ step: "today" });
-
-    try {
-      const overview = await fetchTodayWorkoutOverview(supabase, userId, todayIsoLocal());
-      setTodayFocus(overview.focus);
-      setTodayItems(overview.items);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Не удалось загрузить «сегодня»";
-      setError(message);
-      setScreen({ step: "muscle" });
-    } finally {
-      setLoading(false);
-    }
-  }, [userId]);
+    setWorkoutSessionItems([]);
+    setScreen({ step: "pick_workout" });
+  }, []);
 
   const refreshChartAfterSave = useCallback(
     async (exerciseSlug: string) => {
@@ -270,36 +285,51 @@ export default function App() {
     if (screen.step === "chart") {
       setMaxPoints([]);
       setTonnagePoints([]);
+      if (screen.fromWorkout) {
+        void loadWorkoutSession(screen.muscleGroup);
+        return;
+      }
       setScreen({ step: "exercise", muscleGroup: screen.muscleGroup });
       return;
     }
     if (screen.step === "exercise") {
       setExercises([]);
       setScreen({ step: "muscle" });
+      return;
     }
-    if (screen.step === "today") {
-      setTodayItems([]);
+    if (screen.step === "workout_session") {
+      setWorkoutSessionItems([]);
+      setScreen({ step: "pick_workout" });
+      return;
+    }
+    if (screen.step === "pick_workout") {
       setScreen({ step: "muscle" });
     }
   };
 
-  const title = screen.step === "muscle"
-    ? "Прогресс"
-    : screen.step === "exercise"
-      ? muscleGroupLabel(screen.muscleGroup)
-      : screen.step === "today"
-        ? "Сегодня"
-        : screen.exerciseName;
+  const title =
+    screen.step === "muscle"
+      ? "Прогресс"
+      : screen.step === "exercise"
+        ? muscleGroupLabel(screen.muscleGroup)
+        : screen.step === "pick_workout"
+          ? "Выбрать тренировку"
+          : screen.step === "workout_session"
+            ? muscleGroupLabel(screen.muscleGroup)
+            : screen.exerciseName;
 
-  const subtitle = screen.step === "muscle"
-    ? "Выбери группу мышц"
-    : screen.step === "exercise"
-      ? "Выбери упражнение"
-      : screen.step === "today"
-        ? `Фокус: ${todayFocus || "—"}`
-        : metric === "max"
-          ? "Максимальный вес за сессию"
-          : "Тоннаж за сессию";
+  const subtitle =
+    screen.step === "muscle"
+      ? "Выбери группу мышц"
+      : screen.step === "exercise"
+        ? "Выбери упражнение"
+        : screen.step === "pick_workout"
+          ? "Какая тренировка сегодня?"
+          : screen.step === "workout_session"
+            ? "Логируй упражнения"
+            : metric === "max"
+              ? "Максимальный вес за сессию"
+              : "Тоннаж за сессию";
 
   const latestMax = useMemo(() => {
     if (maxPoints.length === 0) return null;
@@ -349,8 +379,8 @@ export default function App() {
         {!loading && !error && screen.step === "muscle" && (
           <>
             <div className="today-btn-row">
-              <button type="button" className="today-btn" onClick={loadToday}>
-                Сегодня
+              <button type="button" className="today-btn" onClick={openPickWorkout}>
+                Выбрать тренировку
               </button>
             </div>
             <ListPicker
@@ -374,16 +404,27 @@ export default function App() {
             onPick={(slug) => {
               const exercise = exercises.find((ex) => ex.slug === slug);
               if (exercise) {
-                void loadChart(screen.muscleGroup, exercise.slug, exercise.name);
+                void loadChart(screen.muscleGroup, exercise.slug, exercise.name, false);
               }
             }}
             emptyText="Нет упражнений с историей в этой группе."
           />
         )}
 
-        {!loading && !error && screen.step === "today" && (
+        {!loading && !error && screen.step === "pick_workout" && (
           <ListPicker
-            items={todayItems.map((it) => ({
+            items={WORKOUT_PICKER_ORDER.map((id) => ({
+              id,
+              title: muscleGroupLabel(id),
+            }))}
+            onPick={(muscleGroup) => void loadWorkoutSession(muscleGroup)}
+            emptyText="Нет групп мышц."
+          />
+        )}
+
+        {!loading && !error && screen.step === "workout_session" && (
+          <ListPicker
+            items={workoutSessionItems.map((it) => ({
               id: it.slug,
               title: it.name,
               subtitle: it.isLoggedToday
@@ -391,11 +432,11 @@ export default function App() {
                 : "Ещё не логировал",
             }))}
             onPick={(slug) => {
-              const item = todayItems.find((x) => x.slug === slug);
+              const item = workoutSessionItems.find((x) => x.slug === slug);
               if (!item) return;
-              void loadChart(item.muscleGroup, item.slug, item.name);
+              void loadChart(screen.muscleGroup, item.slug, item.name, true);
             }}
-            emptyText="На сегодня пока нет доступных упражнений с историей."
+            emptyText="Нет упражнений с историей в этой группе."
           />
         )}
 

@@ -34,7 +34,7 @@ export type LastExerciseLog = {
   sets: number;
 };
 
-export type TodayOverviewItem = {
+export type WorkoutSessionItem = {
   slug: string;
   name: string;
   muscleGroup: string;
@@ -64,8 +64,7 @@ type LastLogRpcRow = {
   sets_count: number;
 };
 
-type TodayOverviewRpcRow = {
-  focus: string;
+type WorkoutSessionRpcRow = {
   slug: string;
   name: string;
   muscle_group: string;
@@ -214,13 +213,15 @@ export async function fetchLastExerciseLog(
   };
 }
 
-export async function fetchTodayWorkoutOverview(
+export async function fetchMuscleSessionOverview(
   supabase: SupabaseClient,
   telegramUserId: number,
+  muscleGroup: string,
   workoutDateIso: string,
-): Promise<{ focus: string; items: TodayOverviewItem[] }> {
-  const { data, error } = await supabase.rpc("get_today_workout_overview", {
+): Promise<WorkoutSessionItem[]> {
+  const { data, error } = await supabase.rpc("get_muscle_session_overview", {
     p_telegram_user_id: telegramUserId,
+    p_muscle_group: muscleGroup,
     p_workout_date: workoutDateIso,
   });
 
@@ -228,10 +229,8 @@ export async function fetchTodayWorkoutOverview(
     throw new Error(error.message);
   }
 
-  const rows = (data as TodayOverviewRpcRow[]) ?? [];
-  const focus = rows[0]?.focus ?? "Logged";
-
-  const items: TodayOverviewItem[] = rows.map((row) => ({
+  const rows = (data as WorkoutSessionRpcRow[]) ?? [];
+  return rows.map((row) => ({
     slug: row.slug,
     name: row.name,
     muscleGroup: row.muscle_group,
@@ -240,8 +239,6 @@ export async function fetchTodayWorkoutOverview(
     lastReps: row.last_reps == null ? null : Number(row.last_reps),
     lastSets: row.last_sets_count == null ? null : Number(row.last_sets_count),
   }));
-
-  return { focus, items };
 }
 
 export async function logExerciseSession(

@@ -8,6 +8,16 @@ export const MUSCLE_GROUP_ORDER = [
   "legs",
 ] as const;
 
+/** Order for manual workout picker (not tied to calendar). */
+export const WORKOUT_PICKER_ORDER = [
+  "chest",
+  "biceps",
+  "back",
+  "triceps",
+  "shoulders",
+  "legs",
+] as const;
+
 export type MuscleGroupId = (typeof MUSCLE_GROUP_ORDER)[number];
 
 export const MUSCLE_GROUP_LABELS: Record<MuscleGroupId, string> = {
