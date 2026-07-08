@@ -188,7 +188,7 @@ def build_application(settings: Settings, agent_service: GymBroAgentService) -> 
         if not url:
             await update.message.reply_text(
                 "⚠️ MINIAPP_URL не задан в Railway (сервис **бота**, не miniapp).\n"
-                "Добавь URL miniapp-сервиса и redeploy бота — появится кнопка 📊 Динамика."
+                "Добавь URL miniapp-сервиса и redeploy бота — появится кнопка 📊 Dynamics Plus."
             )
 
     async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -204,7 +204,7 @@ def build_application(settings: Settings, agent_service: GymBroAgentService) -> 
             )
             return
         await update.message.reply_text(
-            "График прогресса — нажми 📊 Динамика под «Добавить упражнение»."
+            "График прогресса — нажми 📊 Dynamics Plus под «Добавить упражнение»."
         )
 
     async def log_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

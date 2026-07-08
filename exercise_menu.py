@@ -8,7 +8,7 @@ from config import Settings
 from exercise_resolver import load_catalog
 
 ADD_EXERCISE_BTN = "➕ Добавить упражнение"
-DYNAMICS_BTN = "📊 Динамика"
+DYNAMICS_BTN = "📊 Dynamics Plus"
 
 MUSCLE_GROUPS: dict[str, str] = {
     "chest": "Грудь",
