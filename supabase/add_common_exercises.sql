@@ -36,6 +36,7 @@ insert into public.exercises (slug, name, muscle_group, equipment) values
   ('cable_lateral_raise', 'Махи в стороны на блоке', 'shoulders', 'cable'),
   -- Legs
   ('lunge', 'Выпады', 'legs', 'dumbbell'),
+  ('stationary_lunge', 'Выпады на месте', 'legs', 'dumbbell'),
   ('leg_extension', 'Разгибания ног в тренажёре', 'legs', 'machine'),
   ('leg_curl', 'Сгибания ног в тренажёре', 'legs', 'machine')
 on conflict (slug) do nothing;

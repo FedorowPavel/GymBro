@@ -401,6 +401,16 @@ lunge:
     - walking lunge
     - lunge
 
+stationary_lunge:
+  canonical: Выпады на месте
+  muscle_group: legs
+  aliases:
+    - выпады на месте
+    - выпад на месте
+    - статические выпады
+    - stationary lunge
+    - lunge in place
+
 leg_extension:
   canonical: Разгибания ног в тренажёре
   muscle_group: legs
