@@ -522,7 +522,7 @@ export default function App() {
 
             {metric === "tonnage" && latestTonnage && (
               <p className="subtitle" style={{ marginBottom: 10 }}>
-                Последняя: <strong>{latestTonnage.tonnage.toFixed(1)}</strong> ton ({latestTonnage.date})
+                Последняя: <strong>{latestTonnage.tonnage.toFixed(1)}</strong> кг ({latestTonnage.date})
               </p>
             )}
 
@@ -534,14 +534,14 @@ export default function App() {
 
             {metric === "tonnage" && prTonnage && (
               <p className="subtitle" style={{ marginBottom: 12 }}>
-                PR тоннажа: <strong>{prTonnage.tonnage.toFixed(1)}</strong> ton ({prTonnage.date})
+                PR тоннажа: <strong>{prTonnage.tonnage.toFixed(1)}</strong> кг ({prTonnage.date})
               </p>
             )}
 
             {metric === "max" && <ExerciseProgressChart data={maxPoints} />}
             {metric === "tonnage" && <ExerciseTonnageChart data={tonnagePoints} />}
             <p className="legend">
-              {metric === "max" ? "Ось Y — максимальный вес за сессию (кг)" : "Ось Y — тоннаяж за сессию"}
+              {metric === "max" ? "Ось Y — максимальный вес за сессию (кг)" : "Ось Y — тоннаж за сессию (кг)"}
             </p>
 
             <ul className="session-list">
