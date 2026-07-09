@@ -36,7 +36,7 @@ function CustomTooltip({
     >
       <div>{point.date}</div>
       <div>
-        <strong>{point.tonnage.toFixed(1)}</strong> ton
+        <strong>{point.tonnage.toFixed(1)}</strong> кг
       </div>
       <div>{point.sets} подход(ов)</div>
     </div>
@@ -53,7 +53,7 @@ export function ExerciseTonnageChart({ data }: Props) {
           <YAxis
             domain={["dataMin - 5", "dataMax + 5"]}
             tick={{ fontSize: 11 }}
-            unit=" ton"
+            unit=" кг"
           />
           <Tooltip content={<CustomTooltip />} />
           <Line
