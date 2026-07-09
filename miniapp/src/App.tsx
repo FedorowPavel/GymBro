@@ -522,7 +522,7 @@ export default function App() {
 
             {metric === "tonnage" && latestTonnage && (
               <p className="subtitle" style={{ marginBottom: 10 }}>
-                Последняя: <strong>{latestTonnage.tonnage.toFixed(1)}</strong> кг ({latestTonnage.date})
+                Последняя: <strong>{latestTonnage.tonnage.toFixed(0)}</strong> кг ({latestTonnage.date})
               </p>
             )}
 
@@ -534,7 +534,7 @@ export default function App() {
 
             {metric === "tonnage" && prTonnage && (
               <p className="subtitle" style={{ marginBottom: 12 }}>
-                PR тоннажа: <strong>{prTonnage.tonnage.toFixed(1)}</strong> кг ({prTonnage.date})
+                PR тоннажа: <strong>{prTonnage.tonnage.toFixed(0)}</strong> кг ({prTonnage.date})
               </p>
             )}
 

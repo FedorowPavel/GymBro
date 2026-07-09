@@ -36,7 +36,7 @@ function CustomTooltip({
     >
       <div>{point.date}</div>
       <div>
-        <strong>{point.tonnage.toFixed(1)}</strong> кг
+        <strong>{point.tonnage.toFixed(0)}</strong> кг
       </div>
       <div>{point.sets} подход(ов)</div>
     </div>
@@ -44,29 +44,33 @@ function CustomTooltip({
 }
 
 export function ExerciseTonnageChart({ data }: Props) {
+  const chartWidth = Math.max(280, data.length * 52);
+
   return (
-    <div className="chart-wrap">
-      <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={data} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.08)" />
-          <XAxis dataKey="label" tick={{ fontSize: 11 }} interval="preserveStartEnd" />
-          <YAxis
-            domain={["dataMin - 5", "dataMax + 5"]}
-            tick={{ fontSize: 11 }}
-            unit=" кг"
-          />
-          <Tooltip content={<CustomTooltip />} />
-          <Line
-            type="monotone"
-            dataKey="tonnage"
-            stroke="#16a34a"
-            strokeWidth={2.5}
-            dot={{ r: 4, fill: "#16a34a" }}
-            activeDot={{ r: 6 }}
-          />
-        </LineChart>
-      </ResponsiveContainer>
+    <div className="chart-scroll">
+      <div className="chart-inner" style={{ width: chartWidth }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={data} margin={{ top: 8, right: 12, left: 4, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.08)" />
+            <XAxis dataKey="label" tick={{ fontSize: 11 }} interval="preserveStartEnd" />
+            <YAxis
+              width={44}
+              domain={["dataMin - 5", "dataMax + 5"]}
+              tick={{ fontSize: 11 }}
+              unit=" кг"
+            />
+            <Tooltip content={<CustomTooltip />} />
+            <Line
+              type="monotone"
+              dataKey="tonnage"
+              stroke="#16a34a"
+              strokeWidth={2.5}
+              dot={{ r: 4, fill: "#16a34a" }}
+              activeDot={{ r: 6 }}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   );
 }
-

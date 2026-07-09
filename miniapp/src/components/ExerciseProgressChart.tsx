@@ -43,28 +43,33 @@ function CustomTooltip({
 }
 
 export function ExerciseProgressChart({ data }: Props) {
+  const chartWidth = Math.max(280, data.length * 52);
+
   return (
-    <div className="chart-wrap">
-      <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={data} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.08)" />
-          <XAxis dataKey="label" tick={{ fontSize: 11 }} interval="preserveStartEnd" />
-          <YAxis
-            domain={["dataMin - 2", "dataMax + 2"]}
-            tick={{ fontSize: 11 }}
-            unit=" кг"
-          />
-          <Tooltip content={<CustomTooltip />} />
-          <Line
-            type="monotone"
-            dataKey="maxWeight"
-            stroke="#2563eb"
-            strokeWidth={2.5}
-            dot={{ r: 4, fill: "#2563eb" }}
-            activeDot={{ r: 6 }}
-          />
-        </LineChart>
-      </ResponsiveContainer>
+    <div className="chart-scroll">
+      <div className="chart-inner" style={{ width: chartWidth }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={data} margin={{ top: 8, right: 12, left: 4, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.08)" />
+            <XAxis dataKey="label" tick={{ fontSize: 11 }} interval="preserveStartEnd" />
+            <YAxis
+              width={44}
+              domain={["dataMin - 2", "dataMax + 2"]}
+              tick={{ fontSize: 11 }}
+              unit=" кг"
+            />
+            <Tooltip content={<CustomTooltip />} />
+            <Line
+              type="monotone"
+              dataKey="maxWeight"
+              stroke="#2563eb"
+              strokeWidth={2.5}
+              dot={{ r: 4, fill: "#2563eb" }}
+              activeDot={{ r: 6 }}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   );
 }
