@@ -64,8 +64,8 @@ export default function App() {
 
   // Quick log form values
   const [weightKg, setWeightKg] = useState<string>("");
-  const [reps, setReps] = useState<number>(0);
-  const [sets, setSets] = useState<number>(0);
+  const [reps, setReps] = useState<string>("");
+  const [sets, setSets] = useState<string>("");
   const [saving, setSaving] = useState(false);
 
   // Workout session (manual muscle pick)
@@ -182,8 +182,8 @@ export default function App() {
       setTonnagePoints([]);
       setLastLog(null);
       setWeightKg("");
-      setReps(0);
-      setSets(0);
+      setReps("");
+      setSets("");
       setScreen({ step: "chart", muscleGroup, exerciseSlug, exerciseName, fromWorkout });
 
       try {
@@ -199,8 +199,8 @@ export default function App() {
 
         if (last) {
           setWeightKg(String(last.weightKg));
-          setReps(last.reps);
-          setSets(last.sets);
+          setReps(String(last.reps));
+          setSets(String(last.sets));
         }
       } catch (err) {
         const message = err instanceof Error ? err.message : "Не удалось загрузить данные";
@@ -271,8 +271,8 @@ export default function App() {
         setLastLog(last);
         if (last) {
           setWeightKg(String(last.weightKg));
-          setReps(last.reps);
-          setSets(last.sets);
+          setReps(String(last.reps));
+          setSets(String(last.sets));
         }
       } catch (err) {
         const message = err instanceof Error ? err.message : "Не удалось обновить после сохранения";
@@ -451,8 +451,8 @@ export default function App() {
               onRepeat={() => {
                 if (!lastLog) return;
                 setWeightKg(String(lastLog.weightKg));
-                setReps(lastLog.reps);
-                setSets(lastLog.sets);
+                setReps(String(lastLog.reps));
+                setSets(String(lastLog.sets));
               }}
               onSave={async () => {
                 if (!userId) return;
@@ -463,7 +463,9 @@ export default function App() {
                   setError("Введи корректный вес (кг).");
                   return;
                 }
-                if (reps <= 0 || sets <= 0) {
+                const r = Number(reps);
+                const s = Number(sets);
+                if (!Number.isFinite(r) || !Number.isFinite(s) || r <= 0 || s <= 0) {
                   setError("Повторы и подходы должны быть > 0.");
                   return;
                 }
@@ -476,8 +478,8 @@ export default function App() {
                     userId,
                     currentExercise.exerciseSlug,
                     w,
-                    reps,
-                    sets,
+                    r,
+                    s,
                   );
                   await refreshChartAfterSave(currentExercise.exerciseSlug);
                 } catch (err) {
@@ -568,8 +570,8 @@ export default function App() {
               onRepeat={() => {
                 if (!lastLog) return;
                 setWeightKg(String(lastLog.weightKg));
-                setReps(lastLog.reps);
-                setSets(lastLog.sets);
+                setReps(String(lastLog.reps));
+                setSets(String(lastLog.sets));
               }}
               onSave={async () => {
                 if (!userId) return;
@@ -580,7 +582,9 @@ export default function App() {
                   setError("Введи корректный вес (кг).");
                   return;
                 }
-                if (reps <= 0 || sets <= 0) {
+                const r = Number(reps);
+                const s = Number(sets);
+                if (!Number.isFinite(r) || !Number.isFinite(s) || r <= 0 || s <= 0) {
                   setError("Повторы и подходы должны быть > 0.");
                   return;
                 }
@@ -593,8 +597,8 @@ export default function App() {
                     userId,
                     currentExercise.exerciseSlug,
                     w,
-                    reps,
-                    sets,
+                    r,
+                    s,
                   );
                   await refreshChartAfterSave(currentExercise.exerciseSlug);
                 } catch (err) {

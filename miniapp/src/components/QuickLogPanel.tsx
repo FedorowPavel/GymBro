@@ -5,11 +5,11 @@ type Props = {
   exerciseName: string;
   lastLog: LastExerciseLog | null;
   weightKg: string;
-  reps: number;
-  sets: number;
+  reps: string;
+  sets: string;
   onWeightKgChange: (v: string) => void;
-  onRepsChange: (v: number) => void;
-  onSetsChange: (v: number) => void;
+  onRepsChange: (v: string) => void;
+  onSetsChange: (v: string) => void;
   onRepeat: () => void;
   onSave: () => Promise<void>;
   saving: boolean;
@@ -34,8 +34,16 @@ export function QuickLogPanel({
   saving,
 }: Props) {
   const weightNum = useMemo(() => toNumberOrNull(weightKg), [weightKg]);
+  const repsNum = useMemo(() => toNumberOrNull(reps), [reps]);
+  const setsNum = useMemo(() => toNumberOrNull(sets), [sets]);
   const canSave =
-    weightNum !== null && reps > 0 && sets > 0 && !saving && Number(weightNum) > 0;
+    weightNum !== null &&
+    repsNum !== null &&
+    setsNum !== null &&
+    weightNum > 0 &&
+    repsNum > 0 &&
+    setsNum > 0 &&
+    !saving;
 
   return (
     <div className="quick-log">
@@ -54,8 +62,7 @@ export function QuickLogPanel({
           Вес (кг)
           <input
             className="input"
-            type="number"
-            step={0.5}
+            type="text"
             inputMode="decimal"
             value={weightKg}
             onChange={(e) => onWeightKgChange(e.target.value)}
@@ -66,11 +73,10 @@ export function QuickLogPanel({
           Повторы
           <input
             className="input"
-            type="number"
-            step={1}
+            type="text"
             inputMode="numeric"
             value={reps}
-            onChange={(e) => onRepsChange(Number(e.target.value))}
+            onChange={(e) => onRepsChange(e.target.value)}
           />
         </label>
 
@@ -78,11 +84,10 @@ export function QuickLogPanel({
           Подходы
           <input
             className="input"
-            type="number"
-            step={1}
+            type="text"
             inputMode="numeric"
             value={sets}
-            onChange={(e) => onSetsChange(Number(e.target.value))}
+            onChange={(e) => onSetsChange(e.target.value)}
           />
         </label>
       </div>
