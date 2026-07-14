@@ -48,14 +48,15 @@ export function QuickLogPanel({
   const weightNum = useMemo(() => parseOptionalWeight(weightKg), [weightKg]);
   const repsNum = useMemo(() => toNumberOrNull(reps), [reps]);
   const setsNum = useMemo(() => toNumberOrNull(sets), [sets]);
-  const canSave =
-    weightNum !== null &&
-    repsNum !== null &&
-    setsNum !== null &&
-    (bodyweightMode ? weightNum >= 0 : weightNum > 0) &&
-    repsNum > 0 &&
-    setsNum > 0 &&
-    !saving;
+  const canSave = bodyweightMode
+    ? repsNum !== null && setsNum !== null && repsNum > 0 && setsNum > 0 && !saving
+    : weightNum !== null &&
+      repsNum !== null &&
+      setsNum !== null &&
+      weightNum > 0 &&
+      repsNum > 0 &&
+      setsNum > 0 &&
+      !saving;
 
   const lastLogLabel =
     lastLog &&
@@ -82,7 +83,7 @@ export function QuickLogPanel({
               className="input"
               type="text"
               inputMode="decimal"
-              placeholder="0 — без отягощения"
+              placeholder="пусто = без отягощения"
               value={weightKg}
               onChange={(e) => onWeightKgChange(e.target.value)}
             />
@@ -122,6 +123,10 @@ export function QuickLogPanel({
           />
         </label>
       </div>
+
+      {bodyweightMode && (
+        <p className="quick-log-hint">Для чистых подтягиваний оставь доп. вес пустым — нужны только повторы и подходы.</p>
+      )}
 
       <div className="quick-log-actions">
         <button
