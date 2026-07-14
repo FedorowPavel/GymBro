@@ -188,8 +188,23 @@ body {
 
 .quick-log {
   margin-top: 16px;
-  padding-top: 12px;
-  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  padding: 14px 12px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  background: var(--tg-theme-secondary-bg-color, rgba(0, 0, 0, 0.02));
+}
+
+.quick-log--bw {
+  border-color: rgba(37, 99, 235, 0.18);
+  background: linear-gradient(180deg, rgba(37, 99, 235, 0.06), rgba(0, 0, 0, 0.01));
+}
+
+.quick-log-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
 }
 
 .quick-log-title {
@@ -198,9 +213,21 @@ body {
 }
 
 .quick-log-subtitle {
-  margin: 4px 0 10px;
+  margin: 4px 0 0;
   color: var(--tg-theme-hint-color, #6b7280);
   font-size: 0.85rem;
+}
+
+.bw-badge {
+  flex-shrink: 0;
+  margin-top: 2px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(37, 99, 235, 0.12);
+  color: #1d4ed8;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
 }
 
 .quick-log-last {
@@ -210,10 +237,19 @@ body {
 }
 
 .quick-log-hint {
-  margin: 0 0 10px;
+  margin: 8px 0 0;
   color: var(--tg-theme-hint-color, #6b7280);
   font-size: 0.8rem;
   line-height: 1.35;
+}
+
+.quick-log-preview {
+  margin-top: 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(37, 99, 235, 0.08);
+  color: var(--tg-theme-text-color, #1a1a1a);
+  font-size: 0.85rem;
 }
 
 .quick-log-form {
@@ -221,6 +257,14 @@ body {
   grid-template-columns: 1fr 1fr;
   gap: 10px 12px;
   align-items: end;
+}
+
+.quick-log-form--bw {
+  grid-template-columns: 1fr 1fr;
+}
+
+.field-span {
+  grid-column: 1 / -1;
 }
 
 .field {
@@ -232,13 +276,19 @@ body {
 
 .input {
   width: 100%;
-  height: 38px;
+  height: 40px;
   padding: 0 10px;
   border-radius: 10px;
   border: 1px solid rgba(0, 0, 0, 0.12);
-  background: var(--tg-theme-secondary-bg-color, #fff);
+  background: var(--tg-theme-bg-color, #fff);
   color: var(--tg-theme-text-color, #1a1a1a);
   font: inherit;
+}
+
+.input:focus {
+  outline: none;
+  border-color: rgba(37, 99, 235, 0.55);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
 }
 
 .quick-log-actions {

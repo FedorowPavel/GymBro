@@ -64,10 +64,22 @@ export function QuickLogPanel({
       ? formatBodyweightLog(lastLog.weightKg, lastLog.reps, lastLog.sets)
       : `${lastLog.weightKg} кг × ${lastLog.reps} × ${lastLog.sets}`);
 
+  const previewLabel =
+    canSave && repsNum !== null && setsNum !== null
+      ? bodyweightMode
+        ? formatBodyweightLog(weightNum ?? 0, repsNum, setsNum)
+        : `${weightNum} кг × ${repsNum} × ${setsNum}`
+      : null;
+
   return (
-    <div className="quick-log">
-      <h2 className="quick-log-title">Быстрый лог</h2>
-      <div className="quick-log-subtitle">{exerciseName}</div>
+    <div className={`quick-log${bodyweightMode ? " quick-log--bw" : ""}`}>
+      <div className="quick-log-header">
+        <div>
+          <h2 className="quick-log-title">Быстрый лог</h2>
+          <div className="quick-log-subtitle">{exerciseName}</div>
+        </div>
+        {bodyweightMode && <span className="bw-badge">Свой вес</span>}
+      </div>
 
       {lastLog && (
         <div className="quick-log-last">
@@ -75,17 +87,18 @@ export function QuickLogPanel({
         </div>
       )}
 
-      <div className="quick-log-form">
+      <div className={`quick-log-form${bodyweightMode ? " quick-log-form--bw" : ""}`}>
         {bodyweightMode ? (
-          <label className="field">
-            Доп. вес (кг)
+          <label className="field field-span">
+            Доп. вес (кг) — необязательно
             <input
               className="input"
               type="text"
               inputMode="decimal"
-              placeholder="пусто = без отягощения"
+              placeholder="оставь пустым = без отягощения"
               value={weightKg}
               onChange={(e) => onWeightKgChange(e.target.value)}
+              autoComplete="off"
             />
           </label>
         ) : (
@@ -97,6 +110,7 @@ export function QuickLogPanel({
               inputMode="decimal"
               value={weightKg}
               onChange={(e) => onWeightKgChange(e.target.value)}
+              autoComplete="off"
             />
           </label>
         )}
@@ -109,6 +123,8 @@ export function QuickLogPanel({
             inputMode="numeric"
             value={reps}
             onChange={(e) => onRepsChange(e.target.value)}
+            autoComplete="off"
+            autoFocus={bodyweightMode}
           />
         </label>
 
@@ -120,12 +136,21 @@ export function QuickLogPanel({
             inputMode="numeric"
             value={sets}
             onChange={(e) => onSetsChange(e.target.value)}
+            autoComplete="off"
           />
         </label>
       </div>
 
       {bodyweightMode && (
-        <p className="quick-log-hint">Для чистых подтягиваний оставь доп. вес пустым — нужны только повторы и подходы.</p>
+        <p className="quick-log-hint">
+          Введи только повторы и подходы. Доп. вес нужен, только если вешаешь блин/гирю.
+        </p>
+      )}
+
+      {previewLabel && (
+        <div className="quick-log-preview">
+          Будет записано: <strong>{previewLabel}</strong>
+        </div>
       )}
 
       <div className="quick-log-actions">
