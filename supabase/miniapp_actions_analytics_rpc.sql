@@ -112,6 +112,7 @@ as $$
 declare
   v_exercise_id uuid;
   v_muscle_group text;
+  v_equipment text;
   v_split_focus text;
   v_workout_id uuid;
   v_replaced boolean;
@@ -125,18 +126,22 @@ begin
   if p_reps is null or p_reps <= 0 then
     raise exception 'p_reps must be > 0';
   end if;
-  if p_weight_kg is null or p_weight_kg <= 0 then
-    raise exception 'p_weight_kg must be > 0';
+  if p_weight_kg is null or p_weight_kg < 0 then
+    raise exception 'p_weight_kg must be >= 0';
   end if;
 
-  select id, muscle_group
-    into v_exercise_id, v_muscle_group
+  select id, muscle_group, equipment
+    into v_exercise_id, v_muscle_group, v_equipment
   from public.exercises
   where slug = p_exercise_slug
   limit 1;
 
   if v_exercise_id is null then
     raise exception 'Unknown exercise slug: %', p_exercise_slug;
+  end if;
+
+  if p_weight_kg = 0 and coalesce(v_equipment, '') <> 'bodyweight' then
+    raise exception 'p_weight_kg must be > 0 for this exercise';
   end if;
 
   -- Keep behavior close to bot's workout_writer._infer_split_focus()
@@ -154,14 +159,18 @@ begin
   v_workout_id := null;
 
   for r in
-    select id, split_focus, created_at
-    from public.workouts
-    where telegram_user_id = p_telegram_user_id
-      and workout_date = p_workout_date
-    order by created_at desc
+    select w.id, w.split_focus, w.created_at
+    from public.workouts w
+    where w.telegram_user_id = p_telegram_user_id
+      and w.workout_date = p_workout_date
+    order by w.created_at desc
     limit 5
   loop
-    if r.split_focus = v_split_focus or r.split_focus = 'Logged' then
+    if r.split_focus = v_split_focus
+       or r.split_focus = 'Logged'
+       or (v_muscle_group = 'back' and r.split_focus in ('Back', 'Back + Triceps'))
+       or (v_muscle_group = 'chest' and r.split_focus in ('Chest', 'Chest + Biceps'))
+    then
       v_workout_id := r.id;
       exit;
     end if;
@@ -169,17 +178,21 @@ begin
 
   -- If it's "today", allow continuing the latest recent workout within 6 hours.
   if v_workout_id is null and p_workout_date = current_date then
-    select id, split_focus, created_at
+    select w.id, w.split_focus, w.created_at
       into latest_row
-    from public.workouts
-    where telegram_user_id = p_telegram_user_id
-      and workout_date = p_workout_date
-    order by created_at desc
+    from public.workouts w
+    where w.telegram_user_id = p_telegram_user_id
+      and w.workout_date = p_workout_date
+    order by w.created_at desc
     limit 1;
 
     if latest_row.id is not null then
       v_age_hours := (extract(epoch from (now() - latest_row.created_at)) / 3600);
-      if v_age_hours <= 6 and latest_row.split_focus in (v_split_focus, 'Logged', 'In progress') then
+      if v_age_hours <= 6 and (
+        latest_row.split_focus in (v_split_focus, 'Logged', 'In progress')
+        or (v_muscle_group = 'back' and latest_row.split_focus in ('Back', 'Back + Triceps'))
+        or (v_muscle_group = 'chest' and latest_row.split_focus in ('Chest', 'Chest + Biceps'))
+      ) then
         v_workout_id := latest_row.id;
       end if;
     end if;
@@ -194,13 +207,13 @@ begin
 
   -- Replace sets for this (workout, exercise).
   select exists (
-    select 1 from public.workout_sets
-    where workout_id = v_workout_id and exercise_id = v_exercise_id
+    select 1 from public.workout_sets ws
+    where ws.workout_id = v_workout_id and ws.exercise_id = v_exercise_id
   )
   into v_replaced;
 
-  delete from public.workout_sets
-  where workout_id = v_workout_id and exercise_id = v_exercise_id;
+  delete from public.workout_sets ws
+  where ws.workout_id = v_workout_id and ws.exercise_id = v_exercise_id;
 
   insert into public.workout_sets (workout_id, exercise_id, set_number, weight_kg, reps)
   select

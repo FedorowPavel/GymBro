@@ -20,6 +20,7 @@ import {
   type TonnagePoint,
   type WorkoutSessionItem,
 } from "./lib/progress";
+import { formatBodyweightLog, isBodyweightExercise, parseLogWeight } from "./lib/bodyweightExercises";
 import { getSupabase, supabaseConfigured } from "./lib/supabase";
 import { applyTelegramTheme, waitForTelegramUserId } from "./lib/telegram";
 
@@ -198,7 +199,11 @@ export default function App() {
         setLastLog(last);
 
         if (last) {
-          setWeightKg(String(last.weightKg));
+          setWeightKg(
+            isBodyweightExercise(exerciseSlug) && last.weightKg === 0
+              ? ""
+              : String(last.weightKg),
+          );
           setReps(String(last.reps));
           setSets(String(last.sets));
         }
@@ -270,7 +275,11 @@ export default function App() {
         setTonnagePoints(tonnageData);
         setLastLog(last);
         if (last) {
-          setWeightKg(String(last.weightKg));
+          setWeightKg(
+            isBodyweightExercise(exerciseSlug) && last.weightKg === 0
+              ? ""
+              : String(last.weightKg),
+          );
           setReps(String(last.reps));
           setSets(String(last.sets));
         }
@@ -309,6 +318,10 @@ export default function App() {
     }
   };
 
+  const currentExercise = screen.step === "chart" ? screen : null;
+  const bodyweightChart =
+    currentExercise != null && isBodyweightExercise(currentExercise.exerciseSlug);
+
   const title =
     screen.step === "muscle"
       ? "Динамика"
@@ -329,9 +342,11 @@ export default function App() {
           ? "Какая тренировка сегодня?"
           : screen.step === "workout_session"
             ? "Логируй упражнения"
-            : metric === "max"
-              ? "Максимальный вес за сессию"
-              : "Тоннаж за сессию";
+            : bodyweightChart
+              ? "Максимум повторов за сессию"
+              : metric === "max"
+                ? "Максимальный вес за сессию"
+                : "Тоннаж за сессию";
 
   const latestMax = useMemo(() => {
     if (maxPoints.length === 0) return null;
@@ -357,7 +372,46 @@ export default function App() {
     return p;
   }, [tonnagePoints]);
 
-  const currentExercise = screen.step === "chart" ? screen : null;
+  const saveCurrentExercise = useCallback(async () => {
+    if (!userId || !currentExercise) return;
+    const supabase = getSupabase();
+    if (!supabase) return;
+
+    const bodyweightMode = isBodyweightExercise(currentExercise.exerciseSlug);
+    const w = parseLogWeight(weightKg, bodyweightMode);
+    if (w === null) {
+      setError(bodyweightMode ? "Доп. вес должен быть >= 0." : "Введи корректный вес (кг).");
+      return;
+    }
+    const r = Number(reps);
+    const s = Number(sets);
+    if (!Number.isFinite(r) || !Number.isFinite(s) || r <= 0 || s <= 0) {
+      setError("Повторы и подходы должны быть > 0.");
+      return;
+    }
+
+    setSaving(true);
+    setError(null);
+    try {
+      await logExerciseSession(supabase, userId, currentExercise.exerciseSlug, w, r, s);
+      await refreshChartAfterSave(currentExercise.exerciseSlug);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Не удалось сохранить";
+      setError(message);
+    } finally {
+      setSaving(false);
+    }
+  }, [userId, currentExercise, weightKg, reps, sets, refreshChartAfterSave]);
+
+  const formatSessionPoint = useCallback(
+    (point: SessionPoint) => {
+      if (bodyweightChart && point.maxWeight === 0) {
+        return formatBodyweightLog(0, point.reps, point.sets);
+      }
+      return `${point.maxWeight} кг × ${point.reps} × ${point.sets}`;
+    },
+    [bodyweightChart],
+  );
 
   return (
     <div className="app">
@@ -440,6 +494,7 @@ export default function App() {
           <>
             <div className="state">Пока нет записей по этому упражнению.</div>
             <QuickLogPanel
+              exerciseSlug={currentExercise.exerciseSlug}
               exerciseName={currentExercise.exerciseName}
               lastLog={lastLog}
               weightKg={weightKg}
@@ -450,45 +505,15 @@ export default function App() {
               onSetsChange={setSets}
               onRepeat={() => {
                 if (!lastLog) return;
-                setWeightKg(String(lastLog.weightKg));
+                setWeightKg(
+                  isBodyweightExercise(currentExercise.exerciseSlug) && lastLog.weightKg === 0
+                    ? ""
+                    : String(lastLog.weightKg),
+                );
                 setReps(String(lastLog.reps));
                 setSets(String(lastLog.sets));
               }}
-              onSave={async () => {
-                if (!userId) return;
-                const supabase = getSupabase();
-                if (!supabase) return;
-                const w = Number(weightKg);
-                if (!Number.isFinite(w) || w <= 0) {
-                  setError("Введи корректный вес (кг).");
-                  return;
-                }
-                const r = Number(reps);
-                const s = Number(sets);
-                if (!Number.isFinite(r) || !Number.isFinite(s) || r <= 0 || s <= 0) {
-                  setError("Повторы и подходы должны быть > 0.");
-                  return;
-                }
-
-                setSaving(true);
-                setError(null);
-                try {
-                  await logExerciseSession(
-                    supabase,
-                    userId,
-                    currentExercise.exerciseSlug,
-                    w,
-                    r,
-                    s,
-                  );
-                  await refreshChartAfterSave(currentExercise.exerciseSlug);
-                } catch (err) {
-                  const message = err instanceof Error ? err.message : "Не удалось сохранить";
-                  setError(message);
-                } finally {
-                  setSaving(false);
-                }
-              }}
+              onSave={saveCurrentExercise}
               saving={saving}
             />
           </>
@@ -515,8 +540,7 @@ export default function App() {
 
             {metric === "max" && latestMax && (
               <p className="subtitle" style={{ marginBottom: 10 }}>
-                Последняя: <strong>{latestMax.maxWeight} кг</strong> × {latestMax.reps} ×{" "}
-                {latestMax.sets} ({latestMax.date})
+                Последняя: <strong>{formatSessionPoint(latestMax)}</strong> ({latestMax.date})
               </p>
             )}
 
@@ -528,7 +552,7 @@ export default function App() {
 
             {metric === "max" && prMax && (
               <p className="subtitle" style={{ marginBottom: 12 }}>
-                PR: <strong>{prMax.maxWeight} кг</strong> × {prMax.reps} × {prMax.sets} ({prMax.date})
+                PR: <strong>{formatSessionPoint(prMax)}</strong> ({prMax.date})
               </p>
             )}
 
@@ -538,10 +562,19 @@ export default function App() {
               </p>
             )}
 
-            {metric === "max" && <ExerciseProgressChart data={maxPoints} />}
+            {metric === "max" && (
+              <ExerciseProgressChart
+                data={maxPoints}
+                repsMode={bodyweightChart && maxPoints.every((p) => p.maxWeight === 0)}
+              />
+            )}
             {metric === "tonnage" && <ExerciseTonnageChart data={tonnagePoints} />}
             <p className="legend">
-              {metric === "max" ? "Ось Y — максимальный вес за сессию (кг)" : "Ось Y — тоннаж за сессию (кг)"}
+              {metric === "max"
+                ? bodyweightChart && maxPoints.every((p) => p.maxWeight === 0)
+                  ? "Ось Y — максимум повторов за сессию"
+                  : "Ось Y — максимальный вес за сессию (кг)"
+                : "Ось Y — тоннаж за сессию (кг)"}
             </p>
 
             <ul className="session-list">
@@ -551,14 +584,13 @@ export default function App() {
                 .map((p) => (
                   <li key={p.date}>
                     <span className="date">{p.date}</span>
-                    <span>
-                      {p.maxWeight} кг × {p.reps} × {p.sets}
-                    </span>
+                    <span>{formatSessionPoint(p)}</span>
                   </li>
                 ))}
             </ul>
 
             <QuickLogPanel
+              exerciseSlug={currentExercise.exerciseSlug}
               exerciseName={currentExercise.exerciseName}
               lastLog={lastLog}
               weightKg={weightKg}
@@ -569,45 +601,15 @@ export default function App() {
               onSetsChange={setSets}
               onRepeat={() => {
                 if (!lastLog) return;
-                setWeightKg(String(lastLog.weightKg));
+                setWeightKg(
+                  isBodyweightExercise(currentExercise.exerciseSlug) && lastLog.weightKg === 0
+                    ? ""
+                    : String(lastLog.weightKg),
+                );
                 setReps(String(lastLog.reps));
                 setSets(String(lastLog.sets));
               }}
-              onSave={async () => {
-                if (!userId) return;
-                const supabase = getSupabase();
-                if (!supabase) return;
-                const w = Number(weightKg);
-                if (!Number.isFinite(w) || w <= 0) {
-                  setError("Введи корректный вес (кг).");
-                  return;
-                }
-                const r = Number(reps);
-                const s = Number(sets);
-                if (!Number.isFinite(r) || !Number.isFinite(s) || r <= 0 || s <= 0) {
-                  setError("Повторы и подходы должны быть > 0.");
-                  return;
-                }
-
-                setSaving(true);
-                setError(null);
-                try {
-                  await logExerciseSession(
-                    supabase,
-                    userId,
-                    currentExercise.exerciseSlug,
-                    w,
-                    r,
-                    s,
-                  );
-                  await refreshChartAfterSave(currentExercise.exerciseSlug);
-                } catch (err) {
-                  const message = err instanceof Error ? err.message : "Не удалось сохранить";
-                  setError(message);
-                } finally {
-                  setSaving(false);
-                }
-              }}
+              onSave={saveCurrentExercise}
               saving={saving}
             />
           </>

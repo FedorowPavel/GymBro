@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import type { WorkoutSessionItem } from "../lib/progress";
+import { formatBodyweightLog, isBodyweightExercise } from "../lib/bodyweightExercises";
 import { ListPicker } from "./ListPicker";
 
 type Props = {
@@ -7,12 +8,22 @@ type Props = {
   onPick: (slug: string) => void;
 };
 
+function formatLoggedToday(it: WorkoutSessionItem): string {
+  const w = it.lastWeightKg ?? 0;
+  const r = it.lastReps ?? 0;
+  const s = it.lastSets ?? 0;
+  if (isBodyweightExercise(it.slug)) {
+    return formatBodyweightLog(w, r, s);
+  }
+  return `${w} кг × ${r} × ${s}`;
+}
+
 function toPickerItems(items: WorkoutSessionItem[]) {
   return items.map((it) => ({
     id: it.slug,
     title: it.name,
     subtitle: it.isLoggedToday
-      ? `${it.lastWeightKg ?? 0} кг × ${it.lastReps ?? 0} × ${it.lastSets ?? 0}`
+      ? formatLoggedToday(it)
       : it.sessionCount > 0
         ? `${it.sessionCount} в истории`
         : "Не в истории",

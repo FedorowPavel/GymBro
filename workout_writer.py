@@ -37,7 +37,7 @@ def save_workout_log(
 ) -> SaveWorkoutResult | None:
     if not supabase_enabled(settings):
         return None
-    if log.weight_kg <= 0 or log.reps <= 0 or log.sets <= 0:
+    if log.reps <= 0 or log.sets <= 0:
         return None
 
     try:
@@ -46,7 +46,7 @@ def save_workout_log(
         client = _get_client(settings)
         exercise = (
             client.table("exercises")
-            .select("id, muscle_group")
+            .select("id, muscle_group, equipment")
             .eq("slug", log.exercise_slug)
             .limit(1)
             .execute()
@@ -54,6 +54,12 @@ def save_workout_log(
         )
         if not exercise:
             logger.warning("Exercise slug not in DB: %s", log.exercise_slug)
+            return None
+
+        equipment = exercise[0].get("equipment") or ""
+        if log.weight_kg < 0:
+            return None
+        if log.weight_kg == 0 and equipment != "bodyweight":
             return None
 
         exercise_id = exercise[0]["id"]

@@ -11,14 +11,17 @@ import type { SessionPoint } from "../lib/progress";
 
 type Props = {
   data: SessionPoint[];
+  repsMode?: boolean;
 };
 
 function CustomTooltip({
   active,
   payload,
+  repsMode,
 }: {
   active?: boolean;
   payload?: Array<{ payload: SessionPoint }>;
+  repsMode?: boolean;
 }) {
   if (!active || !payload?.length) {
     return null;
@@ -36,13 +39,21 @@ function CustomTooltip({
     >
       <div>{point.date}</div>
       <div>
-        <strong>{point.maxWeight} кг</strong> × {point.reps} × {point.sets}
+        {repsMode ? (
+          <>
+            <strong>{point.reps}</strong> × {point.sets}
+          </>
+        ) : (
+          <>
+            <strong>{point.maxWeight} кг</strong> × {point.reps} × {point.sets}
+          </>
+        )}
       </div>
     </div>
   );
 }
 
-export function ExerciseProgressChart({ data }: Props) {
+export function ExerciseProgressChart({ data, repsMode = false }: Props) {
   const chartWidth = Math.max(280, data.length * 52);
 
   return (
@@ -56,12 +67,12 @@ export function ExerciseProgressChart({ data }: Props) {
               width={44}
               domain={["dataMin - 2", "dataMax + 2"]}
               tick={{ fontSize: 11 }}
-              unit=" кг"
+              unit={repsMode ? "" : " кг"}
             />
-            <Tooltip content={<CustomTooltip />} />
+            <Tooltip content={<CustomTooltip repsMode={repsMode} />} />
             <Line
               type="monotone"
-              dataKey="maxWeight"
+              dataKey={repsMode ? "reps" : "maxWeight"}
               stroke="#2563eb"
               strokeWidth={2.5}
               dot={{ r: 4, fill: "#2563eb" }}

@@ -1,7 +1,9 @@
 import { useMemo } from "react";
 import type { LastExerciseLog } from "../lib/progress";
+import { formatBodyweightLog, isBodyweightExercise } from "../lib/bodyweightExercises";
 
 type Props = {
+  exerciseSlug: string;
   exerciseName: string;
   lastLog: LastExerciseLog | null;
   weightKg: string;
@@ -20,7 +22,16 @@ function toNumberOrNull(v: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+function parseOptionalWeight(v: string): number | null {
+  const trimmed = v.trim();
+  if (trimmed === "") {
+    return 0;
+  }
+  return toNumberOrNull(trimmed);
+}
+
 export function QuickLogPanel({
+  exerciseSlug,
   exerciseName,
   lastLog,
   weightKg,
@@ -33,17 +44,24 @@ export function QuickLogPanel({
   onSave,
   saving,
 }: Props) {
-  const weightNum = useMemo(() => toNumberOrNull(weightKg), [weightKg]);
+  const bodyweightMode = isBodyweightExercise(exerciseSlug);
+  const weightNum = useMemo(() => parseOptionalWeight(weightKg), [weightKg]);
   const repsNum = useMemo(() => toNumberOrNull(reps), [reps]);
   const setsNum = useMemo(() => toNumberOrNull(sets), [sets]);
   const canSave =
     weightNum !== null &&
     repsNum !== null &&
     setsNum !== null &&
-    weightNum > 0 &&
+    (bodyweightMode ? weightNum >= 0 : weightNum > 0) &&
     repsNum > 0 &&
     setsNum > 0 &&
     !saving;
+
+  const lastLogLabel =
+    lastLog &&
+    (bodyweightMode
+      ? formatBodyweightLog(lastLog.weightKg, lastLog.reps, lastLog.sets)
+      : `${lastLog.weightKg} кг × ${lastLog.reps} × ${lastLog.sets}`);
 
   return (
     <div className="quick-log">
@@ -52,22 +70,35 @@ export function QuickLogPanel({
 
       {lastLog && (
         <div className="quick-log-last">
-          Последнее: <strong>{lastLog.weightKg} кг</strong> × {lastLog.reps} × {lastLog.sets} (
-          {lastLog.workoutDate})
+          Последнее: <strong>{lastLogLabel}</strong> ({lastLog.workoutDate})
         </div>
       )}
 
       <div className="quick-log-form">
-        <label className="field">
-          Вес (кг)
-          <input
-            className="input"
-            type="text"
-            inputMode="decimal"
-            value={weightKg}
-            onChange={(e) => onWeightKgChange(e.target.value)}
-          />
-        </label>
+        {bodyweightMode ? (
+          <label className="field">
+            Доп. вес (кг)
+            <input
+              className="input"
+              type="text"
+              inputMode="decimal"
+              placeholder="0 — без отягощения"
+              value={weightKg}
+              onChange={(e) => onWeightKgChange(e.target.value)}
+            />
+          </label>
+        ) : (
+          <label className="field">
+            Вес (кг)
+            <input
+              className="input"
+              type="text"
+              inputMode="decimal"
+              value={weightKg}
+              onChange={(e) => onWeightKgChange(e.target.value)}
+            />
+          </label>
+        )}
 
         <label className="field">
           Повторы
@@ -109,4 +140,3 @@ export function QuickLogPanel({
     </div>
   );
 }
-
