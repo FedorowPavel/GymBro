@@ -45,6 +45,22 @@ export type WorkoutSessionItem = {
   lastSets: number | null;
 };
 
+export type LastWorkoutExercise = {
+  slug: string;
+  name: string;
+  muscleGroup: string;
+  weightKg: number;
+  reps: number;
+  sets: number;
+};
+
+export type LastWorkoutSummary = {
+  workoutDate: string;
+  dateLabel: string;
+  splitFocus: string | null;
+  exercises: LastWorkoutExercise[];
+};
+
 type ProgressRpcRow = {
   workout_date: string;
   max_weight: number;
@@ -74,6 +90,17 @@ type WorkoutSessionRpcRow = {
   last_weight_kg: number | null;
   last_reps: number | null;
   last_sets_count: number | null;
+};
+
+type LastWorkoutSummaryRpcRow = {
+  workout_date: string;
+  split_focus: string | null;
+  slug: string;
+  name: string;
+  muscle_group: string;
+  weight_kg: number;
+  reps: number;
+  sets_count: number;
 };
 
 type MuscleRpcRow = {
@@ -212,6 +239,39 @@ export async function fetchLastExerciseLog(
     weightKg: Number(row.weight_kg),
     reps: Number(row.reps),
     sets: Number(row.sets_count),
+  };
+}
+
+export async function fetchLastWorkoutSummary(
+  supabase: SupabaseClient,
+  telegramUserId: number,
+): Promise<LastWorkoutSummary | null> {
+  const { data, error } = await supabase.rpc("get_last_workout_summary", {
+    p_telegram_user_id: telegramUserId,
+  });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const rows = (data as LastWorkoutSummaryRpcRow[]) ?? [];
+  if (rows.length === 0) {
+    return null;
+  }
+
+  const first = rows[0];
+  return {
+    workoutDate: first.workout_date,
+    dateLabel: formatDateLabel(first.workout_date),
+    splitFocus: first.split_focus?.trim() ? first.split_focus.trim() : null,
+    exercises: rows.map((row) => ({
+      slug: row.slug,
+      name: row.name,
+      muscleGroup: row.muscle_group,
+      weightKg: Number(row.weight_kg),
+      reps: Number(row.reps),
+      sets: Number(row.sets_count),
+    })),
   };
 }
 

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { FloatingRestTimer } from "./components/FloatingRestTimer";
 import { ExerciseProgressChart } from "./components/ExerciseProgressChart";
 import { ExerciseTonnageChart } from "./components/ExerciseTonnageChart";
+import { LastWorkoutSummary } from "./components/LastWorkoutSummary";
 import { ListPicker } from "./components/ListPicker";
 import { QuickLogPanel } from "./components/QuickLogPanel";
 import { WorkoutSessionPicker } from "./components/WorkoutSessionPicker";
@@ -12,10 +13,12 @@ import {
   fetchExercisesWithHistory,
   fetchMuscleGroupsWithHistory,
   fetchLastExerciseLog,
+  fetchLastWorkoutSummary,
   fetchMuscleSessionOverview,
   logExerciseSession,
   type ExerciseOption,
   type LastExerciseLog,
+  type LastWorkoutSummary as LastWorkoutSummaryData,
   type SessionPoint,
   type TonnagePoint,
   type WorkoutSessionItem,
@@ -71,6 +74,7 @@ export default function App() {
 
   // Workout session (manual muscle pick)
   const [workoutSessionItems, setWorkoutSessionItems] = useState<WorkoutSessionItem[]>([]);
+  const [lastWorkout, setLastWorkout] = useState<LastWorkoutSummaryData | null>(null);
 
   useEffect(() => {
     applyTelegramTheme();
@@ -104,12 +108,16 @@ export default function App() {
       }
 
       try {
-        const groups = await fetchMuscleGroupsWithHistory(supabase, id);
+        const [groups, summary] = await Promise.all([
+          fetchMuscleGroupsWithHistory(supabase, id),
+          fetchLastWorkoutSummary(supabase, id),
+        ]);
         if (cancelled) {
           return;
         }
         setUserId(id);
         setMuscleGroups(sortMuscleGroups(groups.map((g) => g.id)));
+        setLastWorkout(summary);
       } catch (err) {
         if (!cancelled) {
           const message = err instanceof Error ? err.message : "Не удалось загрузить данные";
@@ -255,6 +263,26 @@ export default function App() {
     setScreen({ step: "pick_workout" });
   }, []);
 
+  const refreshLastWorkout = useCallback(async () => {
+    if (!userId) return;
+    const supabase = getSupabase();
+    if (!supabase) return;
+    try {
+      const summary = await fetchLastWorkoutSummary(supabase, userId);
+      setLastWorkout(summary);
+    } catch {
+      // Keep previous summary if refresh fails
+    }
+  }, [userId]);
+
+  const goHome = useCallback(() => {
+    setError(null);
+    setExercises([]);
+    setWorkoutSessionItems([]);
+    setScreen({ step: "muscle" });
+    void refreshLastWorkout();
+  }, [refreshLastWorkout]);
+
   const refreshChartAfterSave = useCallback(
     async (exerciseSlug: string) => {
       if (!userId) return;
@@ -265,15 +293,17 @@ export default function App() {
       setSaving(false);
 
       try {
-        const [maxData, tonnageData, last] = await Promise.all([
+        const [maxData, tonnageData, last, summary] = await Promise.all([
           fetchExerciseProgress(supabase, userId, exerciseSlug),
           fetchExerciseTonnageProgress(supabase, userId, exerciseSlug),
           fetchLastExerciseLog(supabase, userId, exerciseSlug),
+          fetchLastWorkoutSummary(supabase, userId),
         ]);
 
         setMaxPoints(maxData);
         setTonnagePoints(tonnageData);
         setLastLog(last);
+        setLastWorkout(summary);
         if (last) {
           setWeightKg(
             isBodyweightExercise(exerciseSlug) && last.weightKg === 0
@@ -304,8 +334,7 @@ export default function App() {
       return;
     }
     if (screen.step === "exercise") {
-      setExercises([]);
-      setScreen({ step: "muscle" });
+      goHome();
       return;
     }
     if (screen.step === "workout_session") {
@@ -314,7 +343,7 @@ export default function App() {
       return;
     }
     if (screen.step === "pick_workout") {
-      setScreen({ step: "muscle" });
+      goHome();
     }
   };
 
@@ -434,6 +463,7 @@ export default function App() {
 
         {!loading && !error && screen.step === "muscle" && (
           <>
+            {lastWorkout && <LastWorkoutSummary summary={lastWorkout} />}
             <div className="today-btn-row">
               <button type="button" className="today-btn" onClick={openPickWorkout}>
                 Выбрать тренировку

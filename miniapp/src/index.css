@@ -335,6 +335,49 @@ body {
   margin-bottom: 10px;
 }
 
+.last-workout {
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.last-workout-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--tg-theme-hint-color, #6b7280);
+}
+
+.last-workout-title {
+  margin-top: 2px;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.last-workout-list {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.last-workout-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0;
+  font-size: 0.88rem;
+}
+
+.last-workout-name {
+  min-width: 0;
+}
+
+.last-workout-meta {
+  flex-shrink: 0;
+  color: var(--tg-theme-hint-color, #6b7280);
+  white-space: nowrap;
+}
+
 .today-btn {
   flex: 1;
   height: 40px;

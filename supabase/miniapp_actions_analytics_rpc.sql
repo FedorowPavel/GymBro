@@ -345,15 +345,97 @@ as $$
 $$;
 
 -- ---------------------------------------------------------------------------
+-- 5) Last logged workout day summary (all exercises on that date)
+-- ---------------------------------------------------------------------------
+create or replace function public.get_last_workout_summary(
+  p_telegram_user_id bigint
+)
+returns table (
+  workout_date date,
+  split_focus text,
+  slug text,
+  name text,
+  muscle_group text,
+  weight_kg numeric,
+  reps smallint,
+  sets_count bigint
+)
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  with last_date as (
+    select max(w.workout_date) as workout_date
+    from public.workouts w
+    where w.telegram_user_id = p_telegram_user_id
+      and exists (
+        select 1 from public.workout_sets ws where ws.workout_id = w.id
+      )
+  ),
+  day_workouts as (
+    select w.id, w.workout_date, w.split_focus, w.created_at
+    from public.workouts w
+    join last_date ld on ld.workout_date = w.workout_date
+    where w.telegram_user_id = p_telegram_user_id
+  ),
+  day_focus as (
+    select dw.split_focus
+    from day_workouts dw
+    where dw.split_focus is not null
+      and btrim(dw.split_focus) <> ''
+      and dw.split_focus <> 'Logged'
+    order by dw.created_at desc
+    limit 1
+  ),
+  latest_per_exercise as (
+    select distinct on (ws.exercise_id)
+      ws.exercise_id,
+      dw.id as workout_id,
+      dw.workout_date
+    from day_workouts dw
+    join public.workout_sets ws on ws.workout_id = dw.id
+    order by ws.exercise_id, dw.created_at desc
+  ),
+  exercise_sets as (
+    select
+      lpe.exercise_id,
+      lpe.workout_date,
+      (array_agg(ws.weight_kg order by ws.set_number))[1] as weight_kg,
+      (array_agg(ws.reps order by ws.set_number))[1]::smallint as reps,
+      count(*)::bigint as sets_count
+    from latest_per_exercise lpe
+    join public.workout_sets ws
+      on ws.workout_id = lpe.workout_id
+     and ws.exercise_id = lpe.exercise_id
+    group by lpe.exercise_id, lpe.workout_date
+  )
+  select
+    es.workout_date,
+    (select df.split_focus from day_focus df) as split_focus,
+    e.slug,
+    e.name,
+    e.muscle_group,
+    es.weight_kg,
+    es.reps,
+    es.sets_count
+  from exercise_sets es
+  join public.exercises e on e.id = es.exercise_id
+  order by e.muscle_group asc, e.name asc;
+$$;
+
+-- ---------------------------------------------------------------------------
 -- Grants for anon key
 -- ---------------------------------------------------------------------------
 revoke all on function public.get_exercise_tonnage_progress(bigint, text) from public;
 revoke all on function public.get_last_exercise_log(bigint, text) from public;
 revoke all on function public.log_exercise_session(bigint, text, numeric, int, int, date) from public;
 revoke all on function public.get_today_workout_overview(bigint, date) from public;
+revoke all on function public.get_last_workout_summary(bigint) from public;
 
 grant execute on function public.get_exercise_tonnage_progress(bigint, text) to anon;
 grant execute on function public.get_last_exercise_log(bigint, text) to anon;
 grant execute on function public.log_exercise_session(bigint, text, numeric, int, int, date) to anon;
 grant execute on function public.get_today_workout_overview(bigint, date) to anon;
+grant execute on function public.get_last_workout_summary(bigint) to anon;
 
