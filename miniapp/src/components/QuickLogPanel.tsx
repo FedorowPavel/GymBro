@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import type { LastExerciseLog } from "../lib/progress";
 import { formatBodyweightLog, isBodyweightExercise } from "../lib/bodyweightExercises";
+import { parseDecimalInput } from "../lib/parseDecimal";
 
 type Props = {
   exerciseSlug: string;
@@ -27,7 +28,7 @@ function parseOptionalWeight(v: string): number | null {
   if (trimmed === "") {
     return 0;
   }
-  return toNumberOrNull(trimmed);
+  return parseDecimalInput(trimmed);
 }
 
 export function QuickLogPanel({
