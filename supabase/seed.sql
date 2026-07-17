@@ -17,7 +17,7 @@ insert into public.profile (
   'Pavel',
   '1993-02-01',
   173,
-  74,
+  74.1,
   'ectomorph',
   'programmer',
   8,
