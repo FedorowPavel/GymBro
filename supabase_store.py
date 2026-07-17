@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 from collections import defaultdict
+from datetime import datetime, timezone
 from typing import Any
 
 from config import Settings
@@ -37,6 +38,33 @@ def _get_client(settings: Settings):
         options=options,
     )
     return _client
+
+
+def update_profile_weight(
+    settings: Settings,
+    telegram_user_id: int,
+    weight_kg: float,
+) -> bool:
+    """Update body weight in profile row."""
+    if not supabase_enabled(settings):
+        return False
+    try:
+        client = _get_client(settings)
+        (
+            client.table("profile")
+            .update(
+                {
+                    "weight_kg": weight_kg,
+                    "updated_at": datetime.now(timezone.utc).isoformat(),
+                }
+            )
+            .eq("telegram_user_id", telegram_user_id)
+            .execute()
+        )
+        return True
+    except Exception:  # noqa: BLE001
+        logger.exception("Failed to update profile weight for user %s", telegram_user_id)
+        return False
 
 
 def fetch_profile_context(settings: Settings, telegram_user_id: int) -> str | None:
