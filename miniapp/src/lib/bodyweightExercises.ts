@@ -1,3 +1,5 @@
+import { parseDecimalInput } from "./parseDecimal";
+
 /** Slugs with equipment=bodyweight in exercises catalog. */
 const BODYWEIGHT_SLUGS = new Set([
   "pull_up",
@@ -24,9 +26,9 @@ export function parseLogWeight(weightKg: string, bodyweightMode: boolean): numbe
     if (trimmed === "") {
       return 0;
     }
-    const n = Number(trimmed);
-    return Number.isFinite(n) && n >= 0 ? n : null;
+    const n = parseDecimalInput(trimmed);
+    return n !== null && n >= 0 ? n : null;
   }
-  const n = Number(weightKg);
-  return Number.isFinite(n) && n > 0 ? n : null;
+  const n = parseDecimalInput(weightKg);
+  return n !== null && n > 0 ? n : null;
 }
